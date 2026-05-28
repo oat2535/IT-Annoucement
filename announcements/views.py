@@ -35,6 +35,14 @@ def save_announcement(request):
             
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
+def check_change_no(request):
+    change_no = request.GET.get('change_no', '').strip()
+    if change_no:
+        exists = Announcement.objects.filter(change_no=change_no).exists()
+    else:
+        exists = False
+    return JsonResponse({'exists': exists})
+
 def report_view(request):
     from django.utils.dateparse import parse_date
     from datetime import datetime, timedelta

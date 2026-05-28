@@ -736,14 +736,28 @@
         }
 
         async function exportToImage() {
-            if (!isSavedToDB) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'แจ้งเตือน',
-                    text: 'กรุณากดปุ่ม Save to DB เพื่อบันทึกข้อมูลก่อนทำการ Save as Image ครับ',
-                });
-                return;
+            const changeNoElement = document.querySelector('.change-no-badge');
+            let changeNo = '';
+            if (changeNoElement) {
+                changeNo = changeNoElement.innerText.replace('Change No. :', '').trim();
             }
+            
+            try {
+                const response = await fetch(`/api/check_change_no/?change_no=${changeNo}`);
+                const data = await response.json();
+                
+                if (!data.exists) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'แจ้งเตือน',
+                        text: `Change No. : ${changeNo} ยังไม่ถูกบันทึกใน Database`,
+                    });
+                    return;
+                }
+            } catch (error) {
+                console.error("Error checking change no:", error);
+            }
+            
             removeEditingOutlines();
             const btnPrimary = document.querySelector('.btn-primary');
             const originalText = btnPrimary.innerHTML;
@@ -803,14 +817,28 @@
         }
 
         async function exportToPDF() {
-            if (!isSavedToDB) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'แจ้งเตือน',
-                    text: 'กรุณากดปุ่ม Save to DB เพื่อบันทึกข้อมูลก่อนทำการ Save as PDF ครับ',
-                });
-                return;
+            const changeNoElement = document.querySelector('.change-no-badge');
+            let changeNo = '';
+            if (changeNoElement) {
+                changeNo = changeNoElement.innerText.replace('Change No. :', '').trim();
             }
+            
+            try {
+                const response = await fetch(`/api/check_change_no/?change_no=${changeNo}`);
+                const data = await response.json();
+                
+                if (!data.exists) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'แจ้งเตือน',
+                        text: `Change No. : ${changeNo} ยังไม่ถูกบันทึกใน Database`,
+                    });
+                    return;
+                }
+            } catch (error) {
+                console.error("Error checking change no:", error);
+            }
+            
             removeEditingOutlines();
             const btnDanger = document.querySelector('.btn-danger');
             const originalText = btnDanger.innerHTML;

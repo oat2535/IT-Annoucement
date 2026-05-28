@@ -96,10 +96,10 @@ def export_csv(request):
     writer = csv.writer(response)
     writer.writerow(['No.', 'Change No.', 'Subject', 'Operate Date', 'Operate Time', 'User Operate', 'Remark', 'Create Date'])
     
-    for item in announcements:
+    for idx, item in enumerate(announcements, 1):
         create_date_formatted = item.create_date.strftime('%Y-%m-%d %H:%M') if item.create_date else ''
         writer.writerow([
-            item.id,
+            idx,
             item.change_no,
             item.subject,
             item.operate_date,

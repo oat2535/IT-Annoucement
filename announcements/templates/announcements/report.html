@@ -360,7 +360,7 @@
                     <tbody>
                         {% for item in announcements %}
                         <tr>
-                            <td><span class="id-badge">{{ item.id }}</span></td>
+                            <td><span class="id-badge">{{ forloop.counter }}</span></td>
                             <td><span class="change-badge">{{ item.change_no }}</span></td>
                             <td class="subject-cell">{{ item.subject }}</td>
                             <td class="date-cell">{{ item.operate_date }}</td>

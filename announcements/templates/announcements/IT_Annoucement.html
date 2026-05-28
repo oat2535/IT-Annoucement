@@ -115,7 +115,8 @@
 
         /* Main Announcement Container */
         .announcement-container {
-            width: 1200px; /* Fixed width for consistent export */
+            width: 100%;
+            max-width: 1200px; /* Fixed width for consistent export */
             background-color: var(--card-bg);
             border-radius: 12px;
             overflow: hidden;
@@ -528,6 +529,46 @@
             font-weight: 500;
             letter-spacing: 0.5px;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .header-section { padding: 30px 40px; }
+            .content-section { padding: 40px; }
+            .footer-section { padding: 25px 40px; }
+            .subheader-title { font-size: 32px; }
+        }
+
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-success { margin-right: 0; }
+            .btn-secondary { margin-left: 0; }
+            .header-top {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .header-right-top { align-items: flex-start; }
+            .header-section { padding: 25px 20px; }
+            .content-section { padding: 25px 20px; }
+            .grid-cards { grid-template-columns: 1fr; }
+            .alert-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .footer-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+                padding: 25px 20px;
+            }
+            .footer-contacts {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
     </style>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -714,8 +755,12 @@
             const originalLeft = element.style.left;
             const originalTop = element.style.top;
             const originalMargin = element.style.margin;
+            const originalWidth = element.style.width;
+            const originalMaxWidth = element.style.maxWidth;
             
             element.style.boxShadow = 'none';
+            element.style.width = '1200px';
+            element.style.maxWidth = 'none';
             // Force element to top-left to avoid fractional pixel rendering which causes white borders
             element.style.position = 'absolute';
             element.style.left = '0px';
@@ -751,6 +796,8 @@
                 element.style.left = originalLeft;
                 element.style.top = originalTop;
                 element.style.margin = originalMargin;
+                element.style.width = originalWidth;
+                element.style.maxWidth = originalMaxWidth;
                 btnPrimary.innerHTML = originalText;
             }
         }
@@ -824,11 +871,28 @@
                 element.style.left = originalLeft;
                 element.style.top = originalTop;
                 element.style.margin = originalMargin;
+                element.style.width = originalWidth;
+                element.style.maxWidth = originalMaxWidth;
                 btnDanger.innerHTML = originalText;
             }
         }
 
         async function saveToDB() {
+            const result = await Swal.fire({
+                title: 'ยืนยันการบันทึกข้อมูล?',
+                text: "คุณต้องการบันทึกข้อมูลการแจ้งเตือนนี้ลงฐานข้อมูลใช่หรือไม่",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ใช่, บันทึกข้อมูล',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
             const btn = document.querySelector('.btn[onclick="saveToDB()"]');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
@@ -891,6 +955,105 @@
                 btn.disabled = false;
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const infoCards = document.querySelectorAll('.info-card');
+            
+            let dateCardValue = null;
+            let dateCardSubtext = null;
+            let timeCardValue = null;
+            let timeCardSubtext = null;
+
+            infoCards.forEach(card => {
+                const label = card.querySelector('.card-label');
+                if (label && label.innerText.trim() === 'วันที่ดำเนินการ') {
+                    dateCardValue = card.querySelector('.card-value');
+                    dateCardSubtext = card.querySelector('.card-subtext');
+                } else if (label && label.innerText.trim() === 'ช่วงเวลา') {
+                    timeCardValue = card.querySelector('.card-value');
+                    timeCardSubtext = card.querySelector('.card-subtext');
+                }
+            });
+
+            // 1. Thai Date to English Date Conversion
+            if (dateCardValue && dateCardSubtext) {
+                dateCardValue.addEventListener('input', function() {
+                    const thaiText = this.innerText.trim();
+                    const thaiMonths = {
+                        'มกราคม': 'January', 'กุมภาพันธ์': 'February', 'มีนาคม': 'March',
+                        'เมษายน': 'April', 'พฤษภาคม': 'May', 'มิถุนายน': 'June',
+                        'กรกฎาคม': 'July', 'สิงหาคม': 'August', 'กันยายน': 'September',
+                        'ตุลาคม': 'October', 'พฤศจิกายน': 'November', 'ธันวาคม': 'December'
+                    };
+
+                    const thaiDays = {
+                        'วันอาทิตย์': 'Sunday', 'วันจันทร์': 'Monday', 'วันอังคาร': 'Tuesday',
+                        'วันพุธ': 'Wednesday', 'วันพฤหัสบดี': 'Thursday', 'วันพฤหัส': 'Thursday',
+                        'วันพฤสบดี': 'Thursday', 'วันศุกร์': 'Friday', 'วันเสาร์': 'Saturday'
+                    };
+
+                    const regex = /(วัน[ก-๙]+)\s*ที่\s*(\d{1,2})\s*([ก-๙]+)\s*(\d{4})/;
+                    const match = thaiText.match(regex);
+
+                    if (match) {
+                        let dayNameThai = match[1];
+                        let dayDate = match[2];
+                        let monthThai = match[3];
+                        let yearThai = parseInt(match[4]);
+
+                        let dayNameEng = "Weekday";
+                        for (let key in thaiDays) {
+                            if (dayNameThai.includes(key) || key.includes(dayNameThai)) {
+                                dayNameEng = thaiDays[key];
+                                break;
+                            }
+                        }
+
+                        let monthEng = thaiMonths[monthThai] || "Month";
+                        let yearEng = yearThai > 2500 ? yearThai - 543 : yearThai;
+
+                        dateCardSubtext.innerText = `${dayNameEng}, ${dayDate} ${monthEng} ${yearEng}`;
+                    }
+                });
+            }
+
+            // 2. Calculate duration
+            if (timeCardValue && timeCardSubtext) {
+                timeCardValue.addEventListener('input', function() {
+                    const timeText = this.innerText.trim();
+                    const regex = /(\d{1,2})[:.](\d{2})\s*(?:น\.?)?\s*(?:-|ถึง)\s*(\d{1,2})[:.](\d{2})/;
+                    const match = timeText.match(regex);
+
+                    if (match) {
+                        const startHour = parseInt(match[1]);
+                        const startMin = parseInt(match[2]);
+                        const endHour = parseInt(match[3]);
+                        const endMin = parseInt(match[4]);
+
+                        let startTotalMins = startHour * 60 + startMin;
+                        let endTotalMins = endHour * 60 + endMin;
+
+                        if (endTotalMins < startTotalMins) {
+                            endTotalMins += 24 * 60;
+                        }
+
+                        const diffMins = endTotalMins - startTotalMins;
+                        const hours = Math.floor(diffMins / 60);
+                        const mins = diffMins % 60;
+
+                        let durationText = 'ระยะเวลาประมาณ ';
+                        if (hours > 0) {
+                            durationText += `${hours} ชั่วโมง`;
+                        }
+                        if (mins > 0) {
+                            durationText += ` ${mins} นาที`;
+                        }
+
+                        timeCardSubtext.innerText = durationText;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

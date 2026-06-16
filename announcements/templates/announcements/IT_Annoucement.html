@@ -580,6 +580,12 @@
         <div style="font-weight: 600; margin-right: 15px; display: flex; align-items: center; color: #475569;">
             <i class="fa-solid fa-pen-to-square" style="margin-right: 8px;"></i> คลิกที่ข้อความเพื่อแก้ไข
         </div>
+        <select id="select-change-no" class="btn" style="border: 1px solid #cbd5e1; background: #f8fafc;" onchange="loadAnnouncement()">
+            <option value="">-- สร้างใหม่ ({{ next_change_no }}) --</option>
+            {% for ann in all_announcements %}
+                <option value="{{ ann.change_no }}">{{ ann.change_no }} - {{ ann.subject }}</option>
+            {% endfor %}
+        </select>
         <button class="btn btn-success" onclick="saveToDB()">
             <i class="fa-solid fa-cloud-arrow-up"></i> Save to DB
         </button>
@@ -727,6 +733,56 @@
     <!-- Scripts for Exporting -->
     <script>
         let isSavedToDB = false;
+
+        async function loadAnnouncement() {
+            const changeNo = document.getElementById('select-change-no').value;
+            if (!changeNo) {
+                window.location.reload();
+                return;
+            }
+            try {
+                const response = await fetch(`/api/get_announcement/?change_no=${changeNo}`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const data = result.data;
+                    document.querySelector('.change-no-badge').innerHTML = `Change No. : ${data.change_no}`;
+                    document.querySelector('.subheader-title').innerText = data.subject;
+                    
+                    const infoCards = document.querySelectorAll('.info-card .card-value');
+                    if(infoCards[0]) infoCards[0].innerText = data.operate_date;
+                    if(infoCards[1]) infoCards[1].innerText = data.operate_time;
+                    if(infoCards[2]) infoCards[2].innerText = data.user_operate;
+                    
+                    const remarkDiv = document.querySelector('.note-section div[contenteditable="true"]');
+                    if(remarkDiv) remarkDiv.innerText = data.remark;
+
+                    if(infoCards[0]) infoCards[0].dispatchEvent(new Event('input'));
+                    if(infoCards[1]) infoCards[1].dispatchEvent(new Event('input'));
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'โหลดข้อมูลสำเร็จ',
+                        text: `โหลดข้อมูล ${data.change_no} เรียบร้อยแล้ว`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ผิดพลาด',
+                        text: result.message
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading announcement:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดในการดึงข้อมูล'
+                });
+            }
+        }
 
         function removeEditingOutlines() {
             // Remove focus before taking screenshot to avoid dotted lines
@@ -935,12 +991,19 @@
                 const remarkDiv = document.querySelector('.note-section div[contenteditable="true"]');
                 const remark = remarkDiv ? remarkDiv.innerText : '';
 
+                const badge = document.querySelector('.change-no-badge');
+                let change_no = '';
+                if (badge) {
+                    change_no = badge.innerText.replace('Change No. :', '').trim();
+                }
+
                 const response = await fetch('/api/save_announcement/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        change_no: change_no,
                         subject: subject,
                         operate_date: operate_date,
                         operate_time: operate_time,

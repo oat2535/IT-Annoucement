@@ -122,3 +122,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ป้องกัน Error: Cross-Origin-Opener-Policy header has been ignored เมื่อรันบน HTTP
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None

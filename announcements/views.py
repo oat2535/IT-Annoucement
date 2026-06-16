@@ -6,7 +6,11 @@ from .models import Announcement
 
 def index(request):
     next_change_no = Announcement.get_next_change_no()
-    return render(request, 'announcements/IT_Annoucement.html', {'next_change_no': next_change_no})
+    all_announcements = Announcement.objects.all().order_by('-id')
+    return render(request, 'announcements/IT_Annoucement.html', {
+        'next_change_no': next_change_no,
+        'all_announcements': all_announcements
+    })
 
 @csrf_exempt
 def save_announcement(request):
@@ -14,15 +18,37 @@ def save_announcement(request):
         try:
             data = json.loads(request.body)
             
-            # Create a new announcement from the received data
-            announcement = Announcement(
-                subject=data.get('subject', ''),
-                operate_date=data.get('operate_date', ''),
-                operate_time=data.get('operate_time', ''),
-                user_operate=data.get('user_operate', ''),
-                remark=data.get('remark', '')
-            )
-            announcement.save()
+            change_no = data.get('change_no', '').strip()
+            if change_no:
+                try:
+                    announcement = Announcement.objects.get(change_no=change_no)
+                    announcement.subject = data.get('subject', '')
+                    announcement.operate_date = data.get('operate_date', '')
+                    announcement.operate_time = data.get('operate_time', '')
+                    announcement.user_operate = data.get('user_operate', '')
+                    announcement.remark = data.get('remark', '')
+                    announcement.save()
+                except Announcement.DoesNotExist:
+                    # Create a new announcement from the received data if not exists somehow
+                    announcement = Announcement(
+                        change_no=change_no,
+                        subject=data.get('subject', ''),
+                        operate_date=data.get('operate_date', ''),
+                        operate_time=data.get('operate_time', ''),
+                        user_operate=data.get('user_operate', ''),
+                        remark=data.get('remark', '')
+                    )
+                    announcement.save()
+            else:
+                # Create a new announcement from the received data
+                announcement = Announcement(
+                    subject=data.get('subject', ''),
+                    operate_date=data.get('operate_date', ''),
+                    operate_time=data.get('operate_time', ''),
+                    user_operate=data.get('user_operate', ''),
+                    remark=data.get('remark', '')
+                )
+                announcement.save()
             
             return JsonResponse({
                 'status': 'success', 
@@ -42,6 +68,26 @@ def check_change_no(request):
     else:
         exists = False
     return JsonResponse({'exists': exists})
+
+def get_announcement(request):
+    change_no = request.GET.get('change_no', '').strip()
+    if change_no:
+        try:
+            announcement = Announcement.objects.get(change_no=change_no)
+            return JsonResponse({
+                'status': 'success',
+                'data': {
+                    'change_no': announcement.change_no,
+                    'subject': announcement.subject,
+                    'operate_date': announcement.operate_date,
+                    'operate_time': announcement.operate_time,
+                    'user_operate': announcement.user_operate,
+                    'remark': announcement.remark
+                }
+            })
+        except Announcement.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'ไม่พบข้อมูล'})
+    return JsonResponse({'status': 'error', 'message': 'ไม่ได้ระบุ Change No.'})
 
 def report_view(request):
     from django.utils.dateparse import parse_date

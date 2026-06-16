@@ -5,6 +5,12 @@ services:
     build: .
     ports:
       - "5889:5889" # Map port 5889 (เปลี่ยนจาก 5886 เพื่อไม่ให้ Port ชนกันหากรันบน VM เดียวกัน)
+    
+    # --- เพิ่มการตั้งค่า Volumes ตรงนี้ ---
+    volumes:
+      - /home/admintlp/it-annoucement-tlp:/app
+    # --------------------------------
+
     # ใช้ environment variables ในการตั้งค่า (สามารถเพิ่ม SECRET_KEY หรือ DB_PASSWORD ที่นี่ได้ในอนาคต)
     environment:
       - DEBUG=1

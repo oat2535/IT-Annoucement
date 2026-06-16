@@ -1,5 +1,5 @@
-# เลือกใช้ Python 3.12 (แบบ Slim) เป็น Image หลัก เพื่อลดขนาดไฟล์
-FROM python:3.12-slim
+# เลือกใช้ Python 3.12 (แบบ Alpine) เป็น Image หลัก เพื่อลดขนาดไฟล์และเพิ่มความปลอดภัย
+FROM python:3.12-alpine
 
 # ตั้งค่าตัวแปรสิ่งแวดล้อม (Environment Variables)
 # ป้องกันไม่ให้ Python เขียนไฟล์ .pyc (ไม่จำเป็นใน Docker)

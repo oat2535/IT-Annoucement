@@ -1,0 +1,956 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Request Form</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas for export to image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #1e293b;
+            --accent-blue: #3b82f6;
+            --text-dark: #334155;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            color: var(--text-dark);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
+            line-height: 1.2;
+            min-height: 44px;
+            text-decoration: none;
+        }
+        .btn i {
+            font-size: 1.2em;
+        }
+
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover { background-color: #059669; }
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .form-container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        h2.form-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--bg-dark);
+            border-bottom: 2px solid var(--accent-blue);
+            padding-bottom: 10px;
+        }
+
+        .section-title {
+            background-color: #f8fafc;
+            padding: 10px 15px;
+            border-left: 4px solid var(--accent-blue);
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .form-col {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        input[type="text"], input[type="date"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        /* Styles specifically for export PDF/Image */
+        #export-area {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        .signature-box {
+            flex: 1;
+        }
+        .signature-line {
+            width: 80%;
+            border-bottom: 1px dashed #475569;
+            margin: 10px auto;
+            height: 30px;
+        }
+        .signature-input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+            white-space: nowrap;
+        }
+        .signature-input {
+            border: none;
+            border-bottom: 1px dotted #475569;
+            text-align: center;
+            outline: none;
+            width: 150px;
+            font-family: inherit;
+        }
+        .signature-date {
+            border: none;
+            border-bottom: 1px dotted #475569;
+            text-align: center;
+            outline: none;
+            width: 120px;
+            font-family: inherit;
+        }
+
+        /* --- Print Styles for A4 Native PDF Export --- */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+            body {
+                background-color: white !important;
+                padding: 0 0 15mm 0 !important;
+                margin: 0 !important;
+            }
+            .toolbar {
+                display: none !important;
+            }
+            .form-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .section-title {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: #f8fafc !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .form-group, .form-row, .signature-section, .print-section {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            /* Hide the file input button in print */
+            #attachments {
+                display: none !important;
+            }
+            /* Force exact colors for badges/checkboxes if possible */
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            textarea {
+                overflow: hidden !important;
+                resize: none !important;
+            }
+            /* Make inputs look clean */
+            input[type="text"], input[type="date"], input[type="number"], select, textarea {
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+            #fm-code {
+                position: fixed !important;
+                bottom: 5mm !important;
+                right: 15mm !important;
+                margin: 0 !important;
+                background-color: white;
+                padding-left: 10px;
+            }
+            .signature-input, .signature-date {
+                border: none !important;
+                background: transparent !important;
+                appearance: none;
+                -webkit-appearance: none;
+            }
+            .signature-date::-webkit-calendar-picker-indicator {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar" id="toolbar">
+        <a href="{% url 'index' %}" class="btn btn-secondary">
+            <i class="fa-solid fa-arrow-left"></i>
+            <div>กลับหน้า<br>หลัก</div>
+        </a>
+        <select id="select-request-no" class="btn" style="border: 1px solid #cbd5e1; background: #f8fafc; margin-left: 15px; max-width: 300px;" onchange="loadRequest()">
+            <option value="">-- สร้างใหม่ ({{ next_request_no }}) --</option>
+            {% for req in all_requests %}
+                <option value="{{ req.request_no }}">{{ req.request_no }} - {{ req.project_name }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-success" id="save-btn" onclick="saveToDB()" style="margin-left: 15px;">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <div>Save to<br>DB</div>
+        </button>
+        <button class="btn btn-primary" onclick="exportToImage()">
+            <i class="fa-solid fa-image"></i>
+            <div>Save as<br>Image</div>
+        </button>
+        <button class="btn btn-danger" onclick="exportToPDF()">
+            <i class="fa-solid fa-file-pdf"></i>
+            <div>Save as<br>PDF</div>
+        </button>
+
+        <a href="{% url 'change_request_report' %}" class="btn btn-info" style="margin-left: auto; background-color: #0ea5e9; color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-table-list"></i>
+            <div>View<br>Report</div>
+        </a>
+    </div>
+
+    <div class="form-container" id="export-area">
+            <div style="display: grid; grid-template-columns: 150px 1fr 150px; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px;">
+            <div style="text-align: left;">
+                <img src="{% static 'logo.png' %}" alt="Logo" style="height: 60px;">
+            </div>
+            <h2 class="form-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0; text-align: center;">
+                แบบคำขออนุญาต แก้ไข/เปลี่ยนแปลง/ติดตั้ง ระบบงานเทคโนโลยีสารสนเทศ<br>(Information Technology System Change Request Form)
+            </h2>
+            <div style="text-align: right; font-weight: bold; color: var(--accent-blue); display: flex; flex-direction: column; justify-content: center;">
+                <div id="display-request-no" style="font-size: 16px;">Request No. : {{ next_request_no }}</div>
+            </div>
+        </div>
+
+        <form id="cr-form" enctype="multipart/form-data">
+                <!-- 0. การจัดประเภท (Categorization) / ข้อมูลการเปลี่ยนแปลง -->
+            <div class="print-section" style="margin-bottom: 20px;">
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>Change Type :</label>
+                        <select name="change_type" id="change_type">
+                            <option value="">-- Select --</option>
+                            {% for ct in change_types %}
+                            <option value="{{ ct.id }}">{{ ct.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-col">
+                        <label>Change Category :</label>
+                        <select name="change_category" id="change_category">
+                            <option value="">-- Select --</option>
+                            {% for cc in change_categories %}
+                            <option value="{{ cc.id }}">{{ cc.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-col">
+                        <label>System :</label>
+                        <select name="system_affected" id="system_affected">
+                            <option value="">-- Select --</option>
+                            {% for sys in systems %}
+                            <option value="{{ sys.id }}">{{ sys.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>Branch / Location :</label>
+                        <select name="branch_location" id="branch_location">
+                            <option value="">-- Select --</option>
+                            {% for bl in branches %}
+                            <option value="{{ bl.id }}">{{ bl.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-col">
+                        <label>Risk :</label>
+                        <select name="risk_level" id="risk_level">
+                            <option value="">-- Select --</option>
+                            {% for r in risks %}
+                            <option value="{{ r.id }}">{{ r.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 1. ข้อมูลทั่วไปของโครงการ -->
+            <div class="print-section">
+            <div class="section-title">1. ข้อมูลทั่วไปของโครงการ</div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <label>ชื่อโครงการ / Project Name <span style="color:red">*</span></label>
+                    <input type="text" name="project_name" id="project_name" required>
+                </div>
+                <div class="form-col">
+                    <label>เจ้าของโครงการ / Project Owner <span style="color:red">*</span></label>
+                    <input type="text" name="project_owner" id="project_owner" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>วัตถุประสงค์ / รูปแบบโครงการ <span style="color:red">*</span></label>
+                <textarea name="objectives" id="objectives" required></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label>บริษัทผู้รับผิดชอบโครงการ (ถ้ามี)</label>
+                    <input type="text" name="contractor_company" id="contractor_company">
+                </div>
+                <div class="form-col">
+                    <label>ผู้รับผิดชอบหลักระบบ/โครงการ <span style="color:red">*</span></label>
+                    <input type="text" name="main_responsible_person" id="main_responsible_person" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label>วันที่ต้องการเริ่มใช้ resource</label>
+                    <input type="date" name="start_date" id="start_date">
+                </div>
+                <div class="form-col">
+                    <label>วันที่สิ้นสุดการขอใช้ (ถ้ามี)</label>
+                    <input type="date" name="end_date" id="end_date">
+                </div>
+            </div>
+
+            </div>
+            <!-- 2. วัตถุประสงค์ของการใช้งาน -->
+            <div class="print-section">
+            <div class="section-title">2. วัตถุประสงค์ของการใช้งาน</div>
+            
+            <div class="form-group">
+                <label>ใช้สำหรับ</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="radio" name="usage_purpose" value="new"> ติดตั้งใหม่ (New Installation)</label>
+                    <label class="checkbox-item"><input type="radio" name="usage_purpose" value="modify"> เปลี่ยนแปลงแก้ไข (Modify change)</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ประเภทการใช้งาน</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" name="usage_type" value="Dev"> Dev</label>
+                    <label class="checkbox-item"><input type="checkbox" name="usage_type" value="Test"> Test</label>
+                    <label class="checkbox-item"><input type="checkbox" name="usage_type" value="UAT"> UAT</label>
+                    <label class="checkbox-item"><input type="checkbox" name="usage_type" value="Production"> Production</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ประเภทของแอปพลิเคชัน</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" name="app_type" value="Web App"> Web App</label>
+                    <label class="checkbox-item"><input type="checkbox" name="app_type" value="API"> API</label>
+                    <label class="checkbox-item"><input type="checkbox" name="app_type" value="Database"> Database</label>
+                    <label class="checkbox-item"><input type="checkbox" name="app_type" value="Background Service"> Background Service</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ด้าน Infrastructure</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" name="infra_type" value="Hardware/System"> Hardware/System</label>
+                    <label class="checkbox-item"><input type="checkbox" name="infra_type" value="Network"> Network</label>
+                    <label class="checkbox-item"><input type="checkbox" name="infra_type" value="Firewall"> Firewall</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ด้าน Software Dev</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="radio" name="software_dev_test" value="tested"> มีการทดสอบจาก ระบบ UAT</label>
+                    <label class="checkbox-item"><input type="radio" name="software_dev_test" value="untested"> ไม่มีการทดสอบจาก ระบบ UAT</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ด้าน Database</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" name="database_change" value="Master Data"> ปรับปรุงข้อมูล (Master Data)</label>
+                    <label class="checkbox-item"><input type="checkbox" name="database_change" value="Schema"> ปรับปรุงโครงสร้าง (Database Schema)</label>
+                    <label class="checkbox-item"><input type="checkbox" name="database_change" value="Permission"> ปรับปรุงการเข้าถึงข้อมูล (Permission)</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>เอกสาร/ข้อมูลประกอบ</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" name="documents_provided" value="Installation Plan"> แผนการติดตั้ง</label>
+                    <label class="checkbox-item"><input type="checkbox" name="documents_provided" value="Manual"> คู่มือการติดตั้ง</label>
+                    <label class="checkbox-item"><input type="checkbox" name="documents_provided" value="UAT Result"> ผลการทดสอบจาก UAT</label>
+                    <label class="checkbox-item"><input type="checkbox" name="documents_provided" value="Version Details"> รายการ และรายละเอียด Version ที่ติดตั้ง</label>
+                    <label class="checkbox-item"><input type="checkbox" name="documents_provided" value="Rollback Plan"> แผนการถอยกรณีการติดตั้งไม่สำเร็จ (Rollback Plan)</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>อื่นๆ (เอกสารประกอบ)</label>
+                <textarea name="other_documents" id="other_documents"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-paperclip"></i> แนบไฟล์เอกสารประกอบ (รูปภาพ, PDF, เอกสาร ฯลฯ)</label>
+                <input type="file" name="attachments" id="attachments" multiple style="border:none; padding-left:0;">
+                <div id="file-preview-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
+            </div>
+
+            </div>
+            <!-- 3. คุณลักษณะและความต้องการของ Resource (Specification) -->
+            <div class="print-section">
+            <div class="section-title">3. คุณลักษณะและความต้องการของ Resource (Specification)</div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label>จำนวน VM/Server ที่ต้องการ</label>
+                    <input type="number" name="vm_count" id="vm_count">
+                </div>
+                <div class="form-col">
+                    <label>ต้องการ Public IP หรือไม่</label>
+                    <div class="checkbox-group" style="margin-top:10px;">
+                        <label class="checkbox-item"><input type="radio" name="require_public_ip" value="true"> Yes</label>
+                        <label class="checkbox-item"><input type="radio" name="require_public_ip" value="false"> No</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Domain name / Subdomain ที่ใช้</label>
+                <input type="text" name="domain_name" id="domain_name">
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label>CPU (vCore)</label>
+                    <input type="text" name="cpu_vcore" id="cpu_vcore">
+                </div>
+                <div class="form-col">
+                    <label>RAM (GB)</label>
+                    <input type="text" name="ram_gb" id="ram_gb">
+                </div>
+                <div class="form-col">
+                    <label>Storage (GB)</label>
+                    <input type="text" name="storage_gb" id="storage_gb">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label>OS</label>
+                    <div class="checkbox-group" style="margin-top:10px;">
+                        <label class="checkbox-item"><input type="radio" name="os" value="Windows"> Windows</label>
+                        <label class="checkbox-item"><input type="radio" name="os" value="Linux"> Linux</label>
+                        <label class="checkbox-item"><input type="radio" name="os" value="Others"> Others</label>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <label>OS Version</label>
+                    <input type="text" name="os_version" id="os_version">
+                </div>
+            </div>
+
+            </div>
+            <!-- 4. Network & Security -->
+            <div class="print-section">
+            <div class="section-title">4. Network & Security</div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <label>Port ที่ต้องการเปิด (เช่น 80, 443 etc.)</label>
+                    <input type="text" name="ports" id="ports">
+                </div>
+                <div class="form-col">
+                    <label>มีระบบ Authentication หรือไม่</label>
+                    <div class="checkbox-group" style="margin-top:10px;">
+                        <label class="checkbox-item"><input type="radio" name="has_authentication" value="true"> Yes</label>
+                        <label class="checkbox-item"><input type="radio" name="has_authentication" value="false"> No</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <label>การเข้าถึงระบบ</label>
+                    <div class="checkbox-group" style="margin-top:10px;">
+                        <label class="checkbox-item"><input type="radio" name="access_type" value="ภายในองค์กร"> ภายในองค์กร</label>
+                        <label class="checkbox-item"><input type="radio" name="access_type" value="จากภายนอก"> จากภายนอก</label>
+                        <label class="checkbox-item"><input type="radio" name="access_type" value="ผ่าน VPN"> ผ่าน VPN</label>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <label>ต้องการใช้ HTTPS/TSL หรือไม่</label>
+                    <div class="checkbox-group" style="margin-top:10px;">
+                        <label class="checkbox-item"><input type="radio" name="require_https" value="true"> Yes</label>
+                        <label class="checkbox-item"><input type="radio" name="require_https" value="false"> No</label>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+            <!-- 5. อื่นๆ -->
+            <div class="print-section">
+            <div class="section-title">5. อื่นๆ</div>
+            
+            <div class="form-group">
+                <label>คาดการณ์ Traffic (Concurrent / request per second)</label>
+                <input type="text" name="expected_traffic" id="expected_traffic">
+            </div>
+
+            <div class="form-group">
+                <label>มี Dependency กับ Service อื่นใดหรือไม่</label>
+                <input type="text" name="dependencies" id="dependencies">
+            </div>
+
+            <div class="form-group">
+                <label>ต้องการ Disaster Recovery / HA หรือไม่</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="radio" name="require_dr_ha" value="true"> Yes</label>
+                    <label class="checkbox-item"><input type="radio" name="require_dr_ha" value="false"> No</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>คำอธิบาย หรือรายละเอียดอื่นๆ เพิ่มเติม :</label>
+                <textarea name="additional_notes" id="additional_notes"></textarea>
+            </div>
+
+            </div>
+            <!-- Signatures Section (Visible in Export) -->
+            <div class="print-section">
+            <div class="signature-section">
+                <div class="signature-box">
+                    <p>ผู้ร้องขอการเปลี่ยนแปลง</p>
+                    <div style="height: 30px;"></div>
+                    <div class="signature-input-group">
+                        (<input type="text" name="requester_name" id="requester_name" class="signature-input" required>)
+                    </div>
+                    <div class="signature-input-group">
+                        วันที่ <input type="date" name="requester_date" id="requester_date" class="signature-date" required>
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <p>ผู้ประเมินด้านเทคนิค</p>
+                    <div style="height: 30px;"></div>
+                    <div class="signature-input-group">
+                        (<input type="text" name="evaluator_name" id="evaluator_name" class="signature-input" required>)
+                    </div>
+                    <div class="signature-input-group">
+                        วันที่ <input type="date" name="evaluator_date" id="evaluator_date" class="signature-date" required>
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <p>ผู้อนุมัติการเปลี่ยนแปลง</p>
+                    <div style="height: 30px;"></div>
+                    <div class="signature-input-group">
+                        (<input type="text" name="approver_name" id="approver_name" class="signature-input" required>)
+                    </div>
+                    <div class="signature-input-group">
+                        วันที่ <input type="date" name="approver_date" id="approver_date" class="signature-date" required>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+            <div id="fm-code" style="text-align: right; margin-top: 30px; font-size: 14px; font-weight: bold; color: #64748b;">
+                FM-IT-029/0
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        let isSavedToDB = false;
+        let currentRequestNo = '{{ next_request_no }}';
+
+        function loadRequest() {
+            const requestNo = document.getElementById('select-request-no').value;
+            if (!requestNo) {
+                // Clear form to create new
+                document.getElementById('cr-form').reset();
+                document.getElementById('display-request-no').innerText = '-- สร้างใหม่ ({{ next_request_no }}) --';
+                isSavedToDB = false;
+                currentRequestNo = '{{ next_request_no }}';
+                
+                // Enable all form inputs
+                const formElements = document.getElementById('cr-form').elements;
+                for (let i = 0; i < formElements.length; i++) {
+                    formElements[i].disabled = false;
+                }
+                // Show save button
+                document.getElementById('save-btn').style.display = 'flex';
+                
+                return;
+            }
+
+            fetch(`/api/get_change_request/?request_no=${requestNo}`)
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        const data = res.data;
+                        document.getElementById('cr-form').reset();
+                        
+                        // Populate simple inputs (text, select)
+                        const textInputs = ['change_type', 'change_category', 'system_affected', 'branch_location', 'risk_level',
+                            'project_name', 'project_owner', 'objectives', 'contractor_company', 
+                            'main_responsible_person', 'start_date', 'end_date', 'usage_purpose', 
+                            'vm_count', 'domain_name', 'cpu_vcore', 'ram_gb', 'storage_gb', 'os', 'os_version', 
+                            'ports', 'access_type', 'expected_traffic', 'dependencies', 'additional_notes',
+                            'requester_name', 'requester_date', 'evaluator_name', 'evaluator_date', 'approver_name', 'approver_date'];
+                        
+                        textInputs.forEach(field => {
+                            const el = document.getElementsByName(field)[0];
+                            if(el && data[field]) el.value = data[field];
+                        });
+
+                        // Checkboxes (Boolean)
+                        const boolInputs = ['require_public_ip', 'has_authentication', 'require_https', 'require_dr_ha'];
+                        boolInputs.forEach(field => {
+                            const el = document.getElementsByName(field)[0];
+                            if(el) el.checked = data[field] === true;
+                        });
+
+                        // Checkboxes (Comma separated string)
+                        const checkboxGroups = ['usage_type', 'app_type', 'infra_type', 'database_change', 'documents_provided', 'other_documents'];
+                        checkboxGroups.forEach(group => {
+                            if(data[group]) {
+                                const values = data[group].split(',').map(s => s.trim());
+                                const checkboxes = document.querySelectorAll(`input[name="${group}"]`);
+                                checkboxes.forEach(cb => {
+                                    if(values.includes(cb.value)) cb.checked = true;
+                                });
+                                // Handle other_documents which is a text input but treated similarly in some logic, wait, it's just a text input
+                                if(group === 'other_documents') {
+                                     const el = document.getElementsByName(group)[0];
+                                     if(el) el.value = data[group];
+                                }
+                            }
+                        });
+
+                        document.getElementById('display-request-no').innerText = 'Request No. : ' + requestNo;
+                        isSavedToDB = true;
+                        currentRequestNo = requestNo;
+                        
+                        // Disable all form inputs
+                        const formElements = document.getElementById('cr-form').elements;
+                        for (let i = 0; i < formElements.length; i++) {
+                            formElements[i].disabled = true;
+                        }
+                        // Hide save button
+                        document.getElementById('save-btn').style.display = 'none';
+                        
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                });
+        }
+
+        // Handle file preview
+        document.getElementById('attachments').addEventListener('change', function(e) {
+            const previewContainer = document.getElementById('file-preview-container');
+            previewContainer.innerHTML = '';
+            
+            Array.from(e.target.files).forEach(file => {
+                const item = document.createElement('div');
+                item.style.border = '1px solid #cbd5e1';
+                item.style.padding = '5px 10px';
+                item.style.borderRadius = '6px';
+                item.style.backgroundColor = '#f8fafc';
+                item.style.fontSize = '14px';
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '5px';
+
+                let icon = 'fa-file';
+                if (file.type.startsWith('image/')) {
+                    icon = 'fa-file-image';
+                    
+                    // Create image preview if it's an image
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.height = '30px';
+                        img.style.borderRadius = '4px';
+                        item.insertBefore(img, item.firstChild);
+                    }
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    icon = 'fa-file-pdf';
+                } else if (file.type.includes('word')) {
+                    icon = 'fa-file-word';
+                }
+
+                item.innerHTML += `<i class="fa-solid ${icon}"></i> ${file.name}`;
+                previewContainer.appendChild(item);
+            });
+        });
+
+        function collectFormData() {
+            const form = document.getElementById('cr-form');
+            const formData = new FormData(form);
+            
+            // Handle multiple checkboxes that share the same name (like usage_type, app_type, etc.)
+            // We want them as comma separated strings for DB
+            const checkboxGroups = ['usage_type', 'app_type', 'infra_type', 'database_change', 'documents_provided'];
+            
+            checkboxGroups.forEach(group => {
+                const checkboxes = document.querySelectorAll(`input[name="${group}"]:checked`);
+                const values = Array.from(checkboxes).map(cb => cb.value);
+                if (values.length > 0) {
+                    formData.delete(group); // Remove multiple entries
+                    formData.append(group, values.join(', ')); // Append as single comma-separated string
+                }
+            });
+
+            return formData;
+        }
+
+        function saveToDB() {
+            const form = document.getElementById('cr-form');
+            if(!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const formData = collectFormData();
+
+            fetch('/api/save_change_request/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    isSavedToDB = true;
+                    currentRequestNo = data.request_no;
+                    document.getElementById('display-request-no').innerText = 'Request No. : ' + currentRequestNo;
+                    
+                    // Disable all form inputs
+                    const formElements = document.getElementById('cr-form').elements;
+                    for (let i = 0; i < formElements.length; i++) {
+                        formElements[i].disabled = true;
+                    }
+                    // Hide save button
+                    document.getElementById('save-btn').style.display = 'none';
+
+                    Swal.fire('สำเร็จ', data.message, 'success');
+                } else {
+                    Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            });
+        }
+
+        // Before export, prepare inputs for rendering
+        function prepareForExport() {
+            // Hide non-printable elements
+            document.getElementById('toolbar').style.display = 'none';
+            document.getElementById('attachments').style.display = 'none';
+
+            // Force a fixed width for export to prevent layout distortion on smaller screens
+            const exportArea = document.getElementById('export-area');
+            exportArea.dataset.originalWidth = exportArea.style.width || '';
+            exportArea.dataset.originalMaxWidth = exportArea.style.maxWidth || '';
+            exportArea.style.width = '1000px';
+            exportArea.style.maxWidth = '1000px';
+
+            // Expand textareas to fit content so no text is cut off
+            document.querySelectorAll('textarea').forEach(ta => {
+                ta.dataset.originalHeight = ta.style.height || '';
+                ta.style.height = (ta.scrollHeight + 5) + 'px';
+            });
+            
+            // For inputs, explicitly set value attribute so html2canvas renders them reliably
+            document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(input => {
+                input.setAttribute('value', input.value);
+            });
+
+            // For checkboxes/radios, set checked attribute explicitly
+            document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
+                if (input.checked) {
+                    input.setAttribute('checked', 'checked');
+                } else {
+                    input.removeAttribute('checked');
+                }
+            });
+        }
+        
+        function restoreAfterExport() {
+            document.getElementById('toolbar').style.display = 'flex';
+            document.getElementById('attachments').style.display = 'block';
+
+            const exportArea = document.getElementById('export-area');
+            exportArea.style.width = exportArea.dataset.originalWidth;
+            exportArea.style.maxWidth = exportArea.dataset.originalMaxWidth;
+            
+            document.querySelectorAll('textarea').forEach(ta => {
+                ta.style.height = ta.dataset.originalHeight;
+            });
+        }
+
+        function exportToImage() {
+            if (!isSavedToDB) {
+                Swal.fire('แจ้งเตือน', 'กรุณาบันทึกลงฐานข้อมูลก่อนส่งออกไฟล์', 'warning');
+                return;
+            }
+            prepareForExport();
+            
+            // Allow DOM to update before capturing
+            setTimeout(() => {
+                html2canvas(document.getElementById('export-area'), {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'Change_Request_' + currentRequestNo + '.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    
+                    restoreAfterExport();
+                }).catch(err => {
+                    restoreAfterExport();
+                    console.error(err);
+                });
+            }, 100);
+        }
+
+        function exportToPDF() {
+            if (!isSavedToDB) {
+                Swal.fire('แจ้งเตือน', 'กรุณาบันทึกลงฐานข้อมูลก่อนส่งออกไฟล์', 'warning');
+                return;
+            }
+            
+            // 1. Expand textareas to fit content perfectly before print
+            document.querySelectorAll('textarea').forEach(ta => {
+                ta.dataset.originalHeight = ta.style.height || '';
+                ta.style.height = (ta.scrollHeight + 2) + 'px'; // Expand to full scrollHeight
+            });
+
+            // 2. Add document title dynamically so the default filename is 'Change_Request_{RequestNo}.pdf'
+            const originalTitle = document.title;
+            document.title = 'Change_Request_' + currentRequestNo;
+
+            // 3. Trigger native print
+            window.print();
+
+            // 4. Restore everything after the print dialog closes
+            setTimeout(() => {
+                document.title = originalTitle;
+                document.querySelectorAll('textarea').forEach(ta => {
+                    ta.style.height = ta.dataset.originalHeight;
+                });
+            }, 500);
+        }
+    </script>
+</body>
+</html>

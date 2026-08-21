@@ -57,17 +57,23 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border: none;
             border-radius: 8px;
             font-family: 'Kanit', sans-serif;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
+            text-align: left;
+            line-height: 1.2;
+            min-height: 44px;
+        }
+        .btn i {
+            font-size: 1.2em;
         }
 
         .btn-primary {
@@ -667,10 +673,12 @@
     <!-- Action Toolbar (Hidden during export) -->
     <div class="toolbar" id="toolbar">
         <div style="font-weight: 600; margin-right: 15px; display: flex; align-items: center; color: #475569;">
-            <i class="fa-solid fa-pen-to-square" style="margin-right: 8px;"></i> คลิกที่ข้อความเพื่อแก้ไข
+            <i class="fa-solid fa-pen-to-square" style="margin-right: 8px; font-size: 1.2em;"></i>
+            <div style="line-height: 1.2; font-size: 14px;">คลิกที่ข้อความเพื่อ<br>แก้ไข</div>
         </div>
         <button class="btn" style="background-color: #0ea5e9; color: white;" onclick="toggleSystemState()">
-            <i class="fa-solid fa-power-off"></i> สลับหน้าเปิดระบบ
+            <i class="fa-solid fa-power-off"></i>
+            <div>สลับหน้าเปิด<br>ระบบ</div>
         </button>
         <select id="select-change-no" class="btn" style="border: 1px solid #cbd5e1; background: #f8fafc;" onchange="loadAnnouncement()">
             <option value="">-- สร้างใหม่ ({{ next_change_no }}) --</option>
@@ -678,17 +686,25 @@
                 <option value="{{ ann.change_no }}">{{ ann.change_no }} - {{ ann.subject }}</option>
             {% endfor %}
         </select>
+        <a href="{% url 'change_request' %}" class="btn" style="background-color: #8b5cf6; color: white; text-decoration: none;">
+            <i class="fa-solid fa-file-signature"></i>
+            <div>Change<br>Request</div>
+        </a>
         <button class="btn btn-success" onclick="saveToDB()">
-            <i class="fa-solid fa-cloud-arrow-up"></i> Save to DB
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <div>Save to<br>DB</div>
         </button>
         <button class="btn btn-primary" onclick="exportToImage()">
-            <i class="fa-solid fa-image"></i> Save as Image
+            <i class="fa-solid fa-image"></i>
+            <div>Save as<br>Image</div>
         </button>
         <button class="btn btn-danger" onclick="exportToPDF()">
-            <i class="fa-solid fa-file-pdf"></i> Save as PDF
+            <i class="fa-solid fa-file-pdf"></i>
+            <div>Save as<br>PDF</div>
         </button>
         <a href="{% url 'report' %}" class="btn btn-secondary">
-            <i class="fa-solid fa-chart-line"></i> View Report
+            <i class="fa-solid fa-chart-line"></i>
+            <div>View<br>Report</div>
         </a>
     </div>
 
@@ -1325,101 +1341,94 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const infoCards = document.querySelectorAll('.info-card');
-            
-            let dateCardValue = null;
-            let dateCardSubtext = null;
-            let timeCardValue = null;
-            let timeCardSubtext = null;
 
             infoCards.forEach(card => {
                 const label = card.querySelector('.card-label');
                 if (label && label.innerText.trim() === 'วันที่ดำเนินการ') {
-                    dateCardValue = card.querySelector('.card-value');
-                    dateCardSubtext = card.querySelector('.card-subtext');
+                    const dateCardValue = card.querySelector('.card-value');
+                    const dateCardSubtext = card.querySelector('.card-subtext');
+                    
+                    if (dateCardValue && dateCardSubtext) {
+                        dateCardValue.addEventListener('input', function() {
+                            const thaiText = this.innerText.trim();
+                            const thaiMonths = {
+                                'มกราคม': 'January', 'กุมภาพันธ์': 'February', 'มีนาคม': 'March',
+                                'เมษายน': 'April', 'พฤษภาคม': 'May', 'มิถุนายน': 'June',
+                                'กรกฎาคม': 'July', 'สิงหาคม': 'August', 'กันยายน': 'September',
+                                'ตุลาคม': 'October', 'พฤศจิกายน': 'November', 'ธันวาคม': 'December'
+                            };
+
+                            const thaiDays = {
+                                'วันอาทิตย์': 'Sunday', 'วันจันทร์': 'Monday', 'วันอังคาร': 'Tuesday',
+                                'วันพุธ': 'Wednesday', 'วันพฤหัสบดี': 'Thursday', 'วันพฤหัส': 'Thursday',
+                                'วันพฤสบดี': 'Thursday', 'วันศุกร์': 'Friday', 'วันเสาร์': 'Saturday'
+                            };
+
+                            const regex = /(วัน[ก-๙]+)\s*ที่\s*(\d{1,2})\s*([ก-๙]+)\s*(\d{4})/;
+                            const match = thaiText.match(regex);
+
+                            if (match) {
+                                let dayNameThai = match[1];
+                                let dayDate = match[2];
+                                let monthThai = match[3];
+                                let yearThai = parseInt(match[4]);
+
+                                let dayNameEng = "Weekday";
+                                for (let key in thaiDays) {
+                                    if (dayNameThai.includes(key) || key.includes(dayNameThai)) {
+                                        dayNameEng = thaiDays[key];
+                                        break;
+                                    }
+                                }
+
+                                let monthEng = thaiMonths[monthThai] || "Month";
+                                let yearEng = yearThai > 2500 ? yearThai - 543 : yearThai;
+
+                                dateCardSubtext.innerText = `${dayNameEng}, ${dayDate} ${monthEng} ${yearEng}`;
+                            }
+                        });
+                    }
                 } else if (label && label.innerText.trim() === 'ช่วงเวลา') {
-                    timeCardValue = card.querySelector('.card-value');
-                    timeCardSubtext = card.querySelector('.card-subtext');
+                    const timeCardValue = card.querySelector('.card-value');
+                    const timeCardSubtext = card.querySelector('.card-subtext');
+                    
+                    if (timeCardValue && timeCardSubtext) {
+                        timeCardValue.addEventListener('input', function() {
+                            const timeText = this.innerText.trim();
+                            const regex = /(\d{1,2})[:.](\d{2})\s*(?:น\.?)?\s*(?:-|ถึง)\s*(\d{1,2})[:.](\d{2})/;
+                            const match = timeText.match(regex);
+
+                            if (match) {
+                                const startHour = parseInt(match[1]);
+                                const startMin = parseInt(match[2]);
+                                const endHour = parseInt(match[3]);
+                                const endMin = parseInt(match[4]);
+
+                                let startTotalMins = startHour * 60 + startMin;
+                                let endTotalMins = endHour * 60 + endMin;
+
+                                if (endTotalMins < startTotalMins) {
+                                    endTotalMins += 24 * 60;
+                                }
+
+                                const diffMins = endTotalMins - startTotalMins;
+                                const hours = Math.floor(diffMins / 60);
+                                const mins = diffMins % 60;
+
+                                let durationText = 'ระยะเวลาประมาณ ';
+                                if (hours > 0) {
+                                    durationText += `${hours} ชั่วโมง`;
+                                }
+                                if (mins > 0) {
+                                    durationText += ` ${mins} นาที`;
+                                }
+
+                                timeCardSubtext.innerText = durationText;
+                            }
+                        });
+                    }
                 }
             });
-
-            // 1. Thai Date to English Date Conversion
-            if (dateCardValue && dateCardSubtext) {
-                dateCardValue.addEventListener('input', function() {
-                    const thaiText = this.innerText.trim();
-                    const thaiMonths = {
-                        'มกราคม': 'January', 'กุมภาพันธ์': 'February', 'มีนาคม': 'March',
-                        'เมษายน': 'April', 'พฤษภาคม': 'May', 'มิถุนายน': 'June',
-                        'กรกฎาคม': 'July', 'สิงหาคม': 'August', 'กันยายน': 'September',
-                        'ตุลาคม': 'October', 'พฤศจิกายน': 'November', 'ธันวาคม': 'December'
-                    };
-
-                    const thaiDays = {
-                        'วันอาทิตย์': 'Sunday', 'วันจันทร์': 'Monday', 'วันอังคาร': 'Tuesday',
-                        'วันพุธ': 'Wednesday', 'วันพฤหัสบดี': 'Thursday', 'วันพฤหัส': 'Thursday',
-                        'วันพฤสบดี': 'Thursday', 'วันศุกร์': 'Friday', 'วันเสาร์': 'Saturday'
-                    };
-
-                    const regex = /(วัน[ก-๙]+)\s*ที่\s*(\d{1,2})\s*([ก-๙]+)\s*(\d{4})/;
-                    const match = thaiText.match(regex);
-
-                    if (match) {
-                        let dayNameThai = match[1];
-                        let dayDate = match[2];
-                        let monthThai = match[3];
-                        let yearThai = parseInt(match[4]);
-
-                        let dayNameEng = "Weekday";
-                        for (let key in thaiDays) {
-                            if (dayNameThai.includes(key) || key.includes(dayNameThai)) {
-                                dayNameEng = thaiDays[key];
-                                break;
-                            }
-                        }
-
-                        let monthEng = thaiMonths[monthThai] || "Month";
-                        let yearEng = yearThai > 2500 ? yearThai - 543 : yearThai;
-
-                        dateCardSubtext.innerText = `${dayNameEng}, ${dayDate} ${monthEng} ${yearEng}`;
-                    }
-                });
-            }
-
-            // 2. Calculate duration
-            if (timeCardValue && timeCardSubtext) {
-                timeCardValue.addEventListener('input', function() {
-                    const timeText = this.innerText.trim();
-                    const regex = /(\d{1,2})[:.](\d{2})\s*(?:น\.?)?\s*(?:-|ถึง)\s*(\d{1,2})[:.](\d{2})/;
-                    const match = timeText.match(regex);
-
-                    if (match) {
-                        const startHour = parseInt(match[1]);
-                        const startMin = parseInt(match[2]);
-                        const endHour = parseInt(match[3]);
-                        const endMin = parseInt(match[4]);
-
-                        let startTotalMins = startHour * 60 + startMin;
-                        let endTotalMins = endHour * 60 + endMin;
-
-                        if (endTotalMins < startTotalMins) {
-                            endTotalMins += 24 * 60;
-                        }
-
-                        const diffMins = endTotalMins - startTotalMins;
-                        const hours = Math.floor(diffMins / 60);
-                        const mins = diffMins % 60;
-
-                        let durationText = 'ระยะเวลาประมาณ ';
-                        if (hours > 0) {
-                            durationText += `${hours} ชั่วโมง`;
-                        }
-                        if (mins > 0) {
-                            durationText += ` ${mins} นาที`;
-                        }
-
-                        timeCardSubtext.innerText = durationText;
-                    }
-                });
-            }
         });
     </script>
 </body>

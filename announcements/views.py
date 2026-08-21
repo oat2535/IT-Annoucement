@@ -155,4 +155,238 @@ def export_csv(request):
             create_date_formatted
         ])
         
+        
+    return response
+
+def change_request_view(request):
+    from .models import ChangeRequest, ChangeType, ChangeCategory, SystemAffected, BranchLocation, RiskLevel
+    next_request_no = ChangeRequest.get_next_request_no()
+    all_requests = ChangeRequest.objects.all().order_by('-id')
+    
+    context = {
+        'next_request_no': next_request_no,
+        'all_requests': all_requests,
+        'change_types': ChangeType.objects.all(),
+        'change_categories': ChangeCategory.objects.all(),
+        'systems': SystemAffected.objects.all(),
+        'branches': BranchLocation.objects.all(),
+        'risks': RiskLevel.objects.all()
+    }
+    return render(request, 'announcements/change_request.html', context)
+
+@csrf_exempt
+def save_change_request(request):
+    if request.method == 'POST':
+        try:
+            from .models import ChangeRequest, ChangeRequestAttachment
+            # Parse form data
+            data = request.POST
+            
+            def get_bool(key):
+                return data.get(key) == 'true' or data.get(key) == 'on' or data.get(key) == '1'
+
+            change_request = ChangeRequest(
+                request_no=ChangeRequest.get_next_request_no(),
+                change_type_id=data.get('change_type') if data.get('change_type') else None,
+                change_category_id=data.get('change_category') if data.get('change_category') else None,
+                system_affected_id=data.get('system_affected') if data.get('system_affected') else None,
+                branch_location_id=data.get('branch_location') if data.get('branch_location') else None,
+                risk_level_id=data.get('risk_level') if data.get('risk_level') else None,
+                
+                project_name=data.get('project_name', ''),
+                project_owner=data.get('project_owner', ''),
+                objectives=data.get('objectives', ''),
+                contractor_company=data.get('contractor_company', ''),
+                main_responsible_person=data.get('main_responsible_person', ''),
+                start_date=data.get('start_date') if data.get('start_date') else None,
+                end_date=data.get('end_date') if data.get('end_date') else None,
+                
+                usage_purpose=data.get('usage_purpose', ''),
+                usage_type=data.get('usage_type', ''),
+                app_type=data.get('app_type', ''),
+                infra_type=data.get('infra_type', ''),
+                software_dev_test=data.get('software_dev_test', ''),
+                database_change=data.get('database_change', ''),
+                documents_provided=data.get('documents_provided', ''),
+                other_documents=data.get('other_documents', ''),
+                
+                vm_count=int(data.get('vm_count')) if data.get('vm_count') and data.get('vm_count').isdigit() else None,
+                require_public_ip=get_bool('require_public_ip'),
+                domain_name=data.get('domain_name', ''),
+                cpu_vcore=data.get('cpu_vcore', ''),
+                ram_gb=data.get('ram_gb', ''),
+                storage_gb=data.get('storage_gb', ''),
+                os=data.get('os', ''),
+                os_version=data.get('os_version', ''),
+                
+                ports=data.get('ports', ''),
+                has_authentication=get_bool('has_authentication'),
+                access_type=data.get('access_type', ''),
+                require_https=get_bool('require_https'),
+                
+                expected_traffic=data.get('expected_traffic', ''),
+                dependencies=data.get('dependencies', ''),
+                require_dr_ha=get_bool('require_dr_ha'),
+                additional_notes=data.get('additional_notes', ''),
+                
+                requester_name=data.get('requester_name', ''),
+                requester_date=data.get('requester_date') if data.get('requester_date') else None,
+                evaluator_name=data.get('evaluator_name', ''),
+                evaluator_date=data.get('evaluator_date') if data.get('evaluator_date') else None,
+                approver_name=data.get('approver_name', ''),
+                approver_date=data.get('approver_date') if data.get('approver_date') else None
+            )
+            change_request.save()
+
+            files = request.FILES.getlist('attachments')
+            for f in files:
+                ChangeRequestAttachment.objects.create(change_request=change_request, file=f)
+
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'บันทึกข้อมูล Change Request เรียบร้อยแล้ว',
+                'id': change_request.id,
+                'request_no': change_request.request_no
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+def get_change_request(request):
+    request_no = request.GET.get('request_no')
+    if not request_no:
+        return JsonResponse({'status': 'error', 'message': 'Missing request_no parameter'}, status=400)
+        
+    try:
+        from .models import ChangeRequest
+        cr = ChangeRequest.objects.get(request_no=request_no)
+        data = {
+            'change_type': cr.change_type_id if cr.change_type_id else '',
+            'change_category': cr.change_category_id if cr.change_category_id else '',
+            'system_affected': cr.system_affected_id if cr.system_affected_id else '',
+            'branch_location': cr.branch_location_id if cr.branch_location_id else '',
+            'risk_level': cr.risk_level_id if cr.risk_level_id else '',
+            
+            'project_name': cr.project_name,
+            'project_owner': cr.project_owner,
+            'objectives': cr.objectives,
+            'contractor_company': cr.contractor_company,
+            'main_responsible_person': cr.main_responsible_person,
+            'start_date': cr.start_date.isoformat() if cr.start_date else '',
+            'end_date': cr.end_date.isoformat() if cr.end_date else '',
+            'usage_purpose': cr.usage_purpose,
+            'usage_type': cr.usage_type,
+            'app_type': cr.app_type,
+            'infra_type': cr.infra_type,
+            'software_dev_test': cr.software_dev_test,
+            'database_change': cr.database_change,
+            'documents_provided': cr.documents_provided,
+            'other_documents': cr.other_documents,
+            'vm_count': cr.vm_count,
+            'require_public_ip': cr.require_public_ip,
+            'domain_name': cr.domain_name,
+            'cpu_vcore': cr.cpu_vcore,
+            'ram_gb': cr.ram_gb,
+            'storage_gb': cr.storage_gb,
+            'os': cr.os,
+            'os_version': cr.os_version,
+            'ports': cr.ports,
+            'has_authentication': cr.has_authentication,
+            'access_type': cr.access_type,
+            'require_https': cr.require_https,
+            'expected_traffic': cr.expected_traffic,
+            'dependencies': cr.dependencies,
+            'require_dr_ha': cr.require_dr_ha,
+            'additional_notes': cr.additional_notes,
+            'requester_name': cr.requester_name,
+            'requester_date': cr.requester_date.isoformat() if cr.requester_date else '',
+            'evaluator_name': cr.evaluator_name,
+            'evaluator_date': cr.evaluator_date.isoformat() if cr.evaluator_date else '',
+            'approver_name': cr.approver_name,
+            'approver_date': cr.approver_date.isoformat() if cr.approver_date else '',
+        }
+        return JsonResponse({'status': 'success', 'data': data})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=404)
+
+def change_request_report_view(request):
+    from .models import ChangeRequest
+    from django.utils.dateparse import parse_date
+    import datetime
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    requests = []
+    searched = False
+    
+    if start_date_str and end_date_str:
+        searched = True
+        try:
+            start_date = parse_date(start_date_str)
+            end_date = parse_date(end_date_str)
+            
+            if start_date and end_date:
+                # Include the whole end_date
+                end_date = end_date + datetime.timedelta(days=1)
+                requests = ChangeRequest.objects.filter(
+                    created_at__gte=start_date,
+                    created_at__lt=end_date
+                ).order_by('-id')
+        except ValueError:
+            pass
+            
+    context = {
+        'requests': requests,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'searched': searched
+    }
+    return render(request, 'announcements/change_request_report.html', context)
+
+def export_change_request_csv(request):
+    from .models import ChangeRequest
+    from django.utils.dateparse import parse_date
+    import datetime
+    import csv
+    from django.http import HttpResponse
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    requests_query = ChangeRequest.objects.all().order_by('-id')
+    
+    if start_date_str and end_date_str:
+        try:
+            start_date = parse_date(start_date_str)
+            end_date = parse_date(end_date_str)
+            if start_date and end_date:
+                end_date = end_date + datetime.timedelta(days=1)
+                requests_query = requests_query.filter(
+                    created_at__gte=start_date,
+                    created_at__lt=end_date
+                )
+        except ValueError:
+            pass
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = f'attachment; filename="change_request_report_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    # Header
+    writer.writerow(['No.', 'Request No.', 'Project Name', 'Project Owner', 'Start Date', 'End Date', 'Create Date'])
+    
+    for i, req in enumerate(requests_query, 1):
+        writer.writerow([
+            i,
+            req.request_no,
+            req.project_name,
+            req.project_owner,
+            req.start_date.strftime("%Y-%m-%d") if req.start_date else "",
+            req.end_date.strftime("%Y-%m-%d") if req.end_date else "",
+            req.created_at.strftime("%Y-%m-%d %H:%M") if req.created_at else ""
+        ])
+        
     return response

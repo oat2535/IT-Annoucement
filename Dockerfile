@@ -21,5 +21,5 @@ COPY . /app/
 # เปิด Port 8000 สำหรับการเชื่อมต่อ (ปรับเปลี่ยนจาก 5886 เพื่อไม่ให้ชนกับ Project เดิม)
 EXPOSE 5889
 
-# คำสั่งเริ่มต้นเมื่อ Container ทำงาน (รัน Server Django)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:5889"]
+# คำสั่งเริ่มต้นเมื่อ Container ทำงาน (รัน Server ผ่าน Gunicorn สำหรับ Production)
+CMD ["gunicorn", "it_announcement_project.wsgi:application", "--bind", "0.0.0.0:5889"]

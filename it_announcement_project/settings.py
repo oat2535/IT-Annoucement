@@ -24,7 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-9+jdk(%uodqv4yk!2do+a#41&k49=agn8bte4c8d=^is$&-83%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Read DEBUG from environment variable (Docker sets this to '1' in development)
+DEBUG = os.environ.get('DEBUG', 'False') == '1'
 
 ALLOWED_HOSTS = ['*']
 
@@ -132,3 +133,4 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 import os
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

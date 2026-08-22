@@ -16,6 +16,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
         :root {
@@ -51,7 +56,10 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
         }
 
         .btn {
@@ -70,6 +78,10 @@
             line-height: 1.2;
             min-height: 44px;
             text-decoration: none;
+            flex-shrink: 0;
+        }
+        .btn div {
+            white-space: nowrap;
         }
         .btn i {
             font-size: 1.2em;
@@ -144,6 +156,34 @@
             font-size: 16px;
         }
 
+        /* Select2 Custom Styling to match existing inputs */
+        .select2-container .select2-selection--single {
+            height: 44px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            padding: 5px 15px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 32px;
+            padding-left: 0;
+            color: #000;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #000;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 42px;
+            right: 10px;
+        }
+        .select2-dropdown {
+            font-family: 'Kanit', sans-serif;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
         textarea {
             resize: vertical;
             min-height: 80px;
@@ -212,11 +252,11 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 15mm;
+                margin: 8mm;
             }
             body {
                 background-color: white !important;
-                padding: 0 0 15mm 0 !important;
+                padding: 0 !important;
                 margin: 0 !important;
             }
             .toolbar {
@@ -225,9 +265,21 @@
             .form-container {
                 box-shadow: none !important;
                 border: none !important;
-                padding: 0 !important;
+                padding: 15px !important;
                 max-width: 100% !important;
                 width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .header-logo {
+                height: 35px !important;
+                margin-left: 0 !important;
+            }
+            .form-title {
+                font-size: 13px !important;
+                white-space: nowrap !important;
+            }
+            .form-title span {
+                font-size: 11px !important;
             }
             .section-title {
                 -webkit-print-color-adjust: exact;
@@ -278,6 +330,33 @@
                 display: none !important;
             }
         }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #3b82f6;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .scroll-top-btn:hover {
+            background-color: #2563eb;
+            transform: scale(1.1);
+        }
+        @media print {
+            .scroll-top-btn { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -306,6 +385,11 @@
             <div>Save as<br>PDF</div>
         </button>
 
+        <button class="btn btn-secondary" onclick="showReferenceInfo()" style="margin-left: 15px; background-color: #64748b; color: white;">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>Reference<br>Info</div>
+        </button>
+
         <a href="{% url 'change_request_report' %}" class="btn btn-info" style="margin-left: auto; background-color: #0ea5e9; color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-table-list"></i>
             <div>View<br>Report</div>
@@ -313,15 +397,15 @@
     </div>
 
     <div class="form-container" id="export-area">
-            <div style="display: grid; grid-template-columns: 150px 1fr 150px; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px;">
+            <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px;">
             <div style="text-align: left;">
-                <img src="{% static 'logo.png' %}" alt="Logo" style="height: 60px;">
+                <img src="{% static 'logo.png' %}" alt="Logo" class="header-logo" style="height: 45px; margin-left: -20px;">
             </div>
-            <h2 class="form-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0; text-align: center;">
-                แบบคำขออนุญาต แก้ไข/เปลี่ยนแปลง/ติดตั้ง ระบบงานเทคโนโลยีสารสนเทศ<br>(Information Technology System Change Request Form)
+            <h2 class="form-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0; text-align: center; font-size: 20px;">
+                แบบคำขออนุญาต แก้ไข/เปลี่ยนแปลง/ติดตั้ง ระบบงานเทคโนโลยีสารสนเทศ<br><span style="font-size: 16px;">(Information Technology System Change Request Form)</span>
             </h2>
             <div style="text-align: right; font-weight: bold; color: var(--accent-blue); display: flex; flex-direction: column; justify-content: center;">
-                <div id="display-request-no" style="font-size: 16px;">Request No. : {{ next_request_no }}</div>
+                <div style="font-size: 14px;">Request No. :<br><span id="display-request-no">{{ next_request_no }}</span></div>
             </div>
         </div>
 
@@ -330,8 +414,8 @@
             <div class="print-section" style="margin-bottom: 20px;">
                 <div class="form-row">
                     <div class="form-col">
-                        <label>Change Type :</label>
-                        <select name="change_type" id="change_type">
+                        <label>Change Type <span style="color:red">*</span> :</label>
+                        <select name="change_type" id="change_type" required>
                             <option value="">-- Select --</option>
                             {% for ct in change_types %}
                             <option value="{{ ct.id }}">{{ ct.name }}</option>
@@ -339,17 +423,17 @@
                         </select>
                     </div>
                     <div class="form-col">
-                        <label>Change Category :</label>
-                        <select name="change_category" id="change_category">
+                        <label>Change Category <span style="color:red">*</span> :</label>
+                        <select name="change_category" id="change_category" required>
                             <option value="">-- Select --</option>
                             {% for cc in change_categories %}
-                            <option value="{{ cc.id }}">{{ cc.name }}</option>
+                            <option value="{{ cc.id }}" {% if cc.name == 'Normal Change' %}selected{% endif %}>{{ cc.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="form-col">
-                        <label>System :</label>
-                        <select name="system_affected" id="system_affected">
+                        <label>System <span style="color:red">*</span> :</label>
+                        <select name="system_affected" id="system_affected" required>
                             <option value="">-- Select --</option>
                             {% for sys in systems %}
                             <option value="{{ sys.id }}">{{ sys.name }}</option>
@@ -359,8 +443,8 @@
                 </div>
                 <div class="form-row">
                     <div class="form-col">
-                        <label>Branch / Location :</label>
-                        <select name="branch_location" id="branch_location">
+                        <label>Branch / Location <span style="color:red">*</span> :</label>
+                        <select name="branch_location" id="branch_location" required>
                             <option value="">-- Select --</option>
                             {% for bl in branches %}
                             <option value="{{ bl.id }}">{{ bl.name }}</option>
@@ -368,8 +452,8 @@
                         </select>
                     </div>
                     <div class="form-col">
-                        <label>Risk :</label>
-                        <select name="risk_level" id="risk_level">
+                        <label>Risk <span style="color:red">*</span> :</label>
+                        <select name="risk_level" id="risk_level" required>
                             <option value="">-- Select --</option>
                             {% for r in risks %}
                             <option value="{{ r.id }}">{{ r.name }}</option>
@@ -666,14 +750,32 @@
     </div>
 
     <script>
+        $(document).ready(function() {
+            $('#system_affected').select2({
+                placeholder: "-- Select --",
+                allowClear: true
+            });
+            $('#branch_location').select2({
+                placeholder: "-- Select --",
+                allowClear: true
+            });
+        });
+
         let isSavedToDB = false;
         let currentRequestNo = '{{ next_request_no }}';
+        let selectedFiles = [];
 
         function loadRequest() {
             const requestNo = document.getElementById('select-request-no').value;
             if (!requestNo) {
                 // Clear form to create new
                 document.getElementById('cr-form').reset();
+                selectedFiles = [];
+                updateFilePreview();
+                if (window.jQuery) { 
+                    $('#system_affected').val('').trigger('change');
+                    $('#branch_location').val('').trigger('change');
+                }
                 document.getElementById('display-request-no').innerText = '-- สร้างใหม่ ({{ next_request_no }}) --';
                 isSavedToDB = false;
                 currentRequestNo = '{{ next_request_no }}';
@@ -695,6 +797,12 @@
                     if (res.status === 'success') {
                         const data = res.data;
                         document.getElementById('cr-form').reset();
+                        selectedFiles = [];
+                        updateFilePreview();
+                        if (window.jQuery) { 
+                            $('#system_affected').val('').trigger('change');
+                            $('#branch_location').val('').trigger('change');
+                        }
                         
                         // Populate simple inputs (text, select)
                         const textInputs = ['change_type', 'change_category', 'system_affected', 'branch_location', 'risk_level',
@@ -706,7 +814,12 @@
                         
                         textInputs.forEach(field => {
                             const el = document.getElementsByName(field)[0];
-                            if(el && data[field]) el.value = data[field];
+                            if(el && data[field]) {
+                                el.value = data[field];
+                                if ((field === 'system_affected' || field === 'branch_location') && window.jQuery) {
+                                    $(el).trigger('change');
+                                }
+                            }
                         });
 
                         // Checkboxes (Boolean)
@@ -733,7 +846,7 @@
                             }
                         });
 
-                        document.getElementById('display-request-no').innerText = 'Request No. : ' + requestNo;
+                        document.getElementById('display-request-no').innerText = requestNo;
                         isSavedToDB = true;
                         currentRequestNo = requestNo;
                         
@@ -745,6 +858,14 @@
                         // Hide save button
                         document.getElementById('save-btn').style.display = 'none';
                         
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'โหลดข้อมูลสำเร็จ',
+                            text: `โหลดข้อมูล ${requestNo} เรียบร้อยแล้ว`,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }
@@ -752,11 +873,20 @@
         }
 
         // Handle file preview
-        document.getElementById('attachments').addEventListener('change', function(e) {
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFilePreview();
+        }
+
+        function updateFilePreview() {
             const previewContainer = document.getElementById('file-preview-container');
             previewContainer.innerHTML = '';
             
-            Array.from(e.target.files).forEach(file => {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            document.getElementById('attachments').files = dt.files;
+            
+            selectedFiles.forEach((file, index) => {
                 const item = document.createElement('div');
                 item.style.border = '1px solid #cbd5e1';
                 item.style.padding = '5px 10px';
@@ -765,20 +895,25 @@
                 item.style.fontSize = '14px';
                 item.style.display = 'flex';
                 item.style.alignItems = 'center';
+                item.style.justifyContent = 'space-between';
                 item.style.gap = '5px';
+                item.style.width = '100%';
+
+                const leftDiv = document.createElement('div');
+                leftDiv.style.display = 'flex';
+                leftDiv.style.alignItems = 'center';
+                leftDiv.style.gap = '5px';
 
                 let icon = 'fa-file';
                 if (file.type.startsWith('image/')) {
                     icon = 'fa-file-image';
-                    
-                    // Create image preview if it's an image
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const img = document.createElement('img');
                         img.src = e.target.result;
                         img.style.height = '30px';
                         img.style.borderRadius = '4px';
-                        item.insertBefore(img, item.firstChild);
+                        leftDiv.insertBefore(img, leftDiv.firstChild);
                     }
                     reader.readAsDataURL(file);
                 } else if (file.type === 'application/pdf') {
@@ -787,9 +922,36 @@
                     icon = 'fa-file-word';
                 }
 
-                item.innerHTML += `<i class="fa-solid ${icon}"></i> ${file.name}`;
+                leftDiv.innerHTML += `<i class="fa-solid ${icon}"></i> <span>${file.name}</span>`;
+                
+                const rightDiv = document.createElement('div');
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                removeBtn.style.background = 'none';
+                removeBtn.style.border = 'none';
+                removeBtn.style.color = '#ef4444';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.style.padding = '0 5px';
+                removeBtn.onclick = function() {
+                    removeFile(index);
+                };
+                rightDiv.appendChild(removeBtn);
+
+                item.appendChild(leftDiv);
+                item.appendChild(rightDiv);
                 previewContainer.appendChild(item);
             });
+        }
+
+        document.getElementById('attachments').addEventListener('change', function(e) {
+            Array.from(e.target.files).forEach(file => {
+                const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!isDuplicate) {
+                    selectedFiles.push(file);
+                }
+            });
+            updateFilePreview();
         });
 
         function collectFormData() {
@@ -815,7 +977,57 @@
         function saveToDB() {
             const form = document.getElementById('cr-form');
             if(!form.checkValidity()) {
-                form.reportValidity();
+                const invalidElements = form.querySelectorAll(':invalid');
+                let missingFields = [];
+                
+                invalidElements.forEach(el => {
+                    if(el.name) {
+                        let labelText = '';
+                        const customLabels = {
+                            'requester_name': 'ชื่อผู้ร้องขอการเปลี่ยนแปลง',
+                            'requester_date': 'วันที่ผู้ร้องขอการเปลี่ยนแปลง',
+                            'evaluator_name': 'ชื่อผู้ประเมินด้านเทคนิค',
+                            'evaluator_date': 'วันที่ผู้ประเมินด้านเทคนิค',
+                            'approver_name': 'ชื่อผู้อนุมัติการเปลี่ยนแปลง',
+                            'approver_date': 'วันที่ผู้อนุมัติการเปลี่ยนแปลง'
+                        };
+
+                        if (customLabels[el.name]) {
+                            labelText = customLabels[el.name];
+                        } else {
+                            const col = el.closest('.form-col');
+                            const group = el.closest('.form-group');
+                            let labelEl = null;
+                            
+                            if (el.previousElementSibling && el.previousElementSibling.tagName === 'LABEL') {
+                                labelEl = el.previousElementSibling;
+                            } else if (col && col.querySelector('label')) {
+                                labelEl = col.querySelector('label');
+                            } else if (group && group.querySelector('label')) {
+                                labelEl = group.querySelector('label');
+                            }
+                            
+                            if (labelEl) {
+                                labelText = labelEl.innerText.replace(/\*/g, '').replace(/:/g, '').trim();
+                            } else {
+                                labelText = el.name;
+                            }
+                        }
+                        missingFields.push(`- ${labelText}`);
+                    }
+                });
+
+                missingFields = [...new Set(missingFields)];
+                const missingText = missingFields.join('<br>');
+
+                Swal.fire({
+                    title: 'ข้อมูลไม่ครบถ้วน',
+                    html: `กรุณากรอกข้อมูลในช่องที่มีเครื่องหมาย * ให้ครบถ้วน:<br><br><div style="text-align: left; font-size: 14px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; max-height: 200px; overflow-y: auto;">${missingText}</div>`,
+                    icon: 'warning',
+                    confirmButtonText: 'ตกลง'
+                }).then(() => {
+                    form.reportValidity();
+                });
                 return;
             }
 
@@ -830,7 +1042,7 @@
                 if(data.status === 'success') {
                     isSavedToDB = true;
                     currentRequestNo = data.request_no;
-                    document.getElementById('display-request-no').innerText = 'Request No. : ' + currentRequestNo;
+                    document.getElementById('display-request-no').innerText = currentRequestNo;
                     
                     // Disable all form inputs
                     const formElements = document.getElementById('cr-form').elements;
@@ -840,7 +1052,9 @@
                     // Hide save button
                     document.getElementById('save-btn').style.display = 'none';
 
-                    Swal.fire('สำเร็จ', data.message, 'success');
+                    Swal.fire('สำเร็จ', data.message, 'success').then(() => {
+                        window.location.href = "{% url 'change_request' %}?request_no=" + data.request_no;
+                    });
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
                 }
@@ -850,28 +1064,78 @@
             });
         }
 
+        let exportReplacements = [];
+
         // Before export, prepare inputs for rendering
         function prepareForExport() {
             // Hide non-printable elements
             document.getElementById('toolbar').style.display = 'none';
             document.getElementById('attachments').style.display = 'none';
 
-            // Force a fixed width for export to prevent layout distortion on smaller screens
+            // Force a fixed width for export to prevent layout distortion on smaller screens (overridden by print CSS)
             const exportArea = document.getElementById('export-area');
             exportArea.dataset.originalWidth = exportArea.style.width || '';
             exportArea.dataset.originalMaxWidth = exportArea.style.maxWidth || '';
             exportArea.style.width = '1000px';
             exportArea.style.maxWidth = '1000px';
-
-            // Expand textareas to fit content so no text is cut off
-            document.querySelectorAll('textarea').forEach(ta => {
-                ta.dataset.originalHeight = ta.style.height || '';
-                ta.style.height = (ta.scrollHeight + 5) + 'px';
-            });
             
-            // For inputs, explicitly set value attribute so html2canvas renders them reliably
-            document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(input => {
-                input.setAttribute('value', input.value);
+            // Flatten inputs into text divs so they wrap perfectly in PDF and Image
+            const inputs = document.querySelectorAll('#export-area input[type="text"], #export-area input[type="date"], #export-area input[type="number"], #export-area select, #export-area textarea');
+            
+            inputs.forEach(el => {
+                if (el.type === 'hidden') return;
+                
+                let elToHide = el;
+                if (window.jQuery && $(el).data('select2')) {
+                    elToHide = $(el).next('.select2-container')[0];
+                }
+
+                const replacement = document.createElement('div');
+                replacement.className = 'export-text-replacement';
+                replacement.style.fontFamily = "'Kanit', sans-serif";
+                replacement.style.fontSize = "14px";
+                replacement.style.color = "#000";
+                replacement.style.padding = "5px 10px";
+                replacement.style.minHeight = "35px";
+                replacement.style.whiteSpace = "pre-wrap"; 
+                replacement.style.wordBreak = "break-word";
+                replacement.style.backgroundColor = "#f8fafc";
+                replacement.style.borderRadius = "6px";
+                replacement.style.border = "1px solid #cbd5e1";
+                
+                // For signature inputs, match their specific styles
+                if (el.classList.contains('signature-input') || el.classList.contains('signature-date')) {
+                    replacement.style.textAlign = "center";
+                    replacement.style.display = "inline-block";
+                    replacement.style.minWidth = el.classList.contains('signature-input') ? "150px" : "120px";
+                    replacement.style.border = "none";
+                    replacement.style.borderBottom = "1px dotted #475569";
+                    replacement.style.backgroundColor = "transparent";
+                    replacement.style.padding = "2px 5px";
+                    replacement.style.minHeight = "auto";
+                }
+                
+                let val = el.value;
+                if (el.tagName === 'SELECT') {
+                    if (el.selectedIndex >= 0) {
+                        val = el.options[el.selectedIndex].text;
+                        if (val.includes('-- Select --')) val = ''; 
+                    }
+                }
+                
+                replacement.innerText = val || '-';
+                
+                if (elToHide && elToHide.parentNode) {
+                    elToHide.parentNode.insertBefore(replacement, elToHide.nextSibling);
+                    const originalDisplay = elToHide.style.display;
+                    elToHide.style.setProperty('display', 'none', 'important');
+                    
+                    exportReplacements.push({
+                        original: elToHide,
+                        originalDisplay: originalDisplay,
+                        replacement: replacement
+                    });
+                }
             });
 
             // For checkboxes/radios, set checked attribute explicitly
@@ -892,9 +1156,14 @@
             exportArea.style.width = exportArea.dataset.originalWidth;
             exportArea.style.maxWidth = exportArea.dataset.originalMaxWidth;
             
-            document.querySelectorAll('textarea').forEach(ta => {
-                ta.style.height = ta.dataset.originalHeight;
+            // Restore inputs
+            exportReplacements.forEach(item => {
+                if(item.replacement.parentNode) {
+                    item.replacement.parentNode.removeChild(item.replacement);
+                }
+                item.original.style.display = item.originalDisplay;
             });
+            exportReplacements = [];
         }
 
         function exportToImage() {
@@ -930,27 +1199,147 @@
                 return;
             }
             
-            // 1. Expand textareas to fit content perfectly before print
-            document.querySelectorAll('textarea').forEach(ta => {
-                ta.dataset.originalHeight = ta.style.height || '';
-                ta.style.height = (ta.scrollHeight + 2) + 'px'; // Expand to full scrollHeight
-            });
+            prepareForExport();
 
-            // 2. Add document title dynamically so the default filename is 'Change_Request_{RequestNo}.pdf'
             const originalTitle = document.title;
             document.title = 'Change_Request_' + currentRequestNo;
 
-            // 3. Trigger native print
-            window.print();
-
-            // 4. Restore everything after the print dialog closes
             setTimeout(() => {
-                document.title = originalTitle;
-                document.querySelectorAll('textarea').forEach(ta => {
-                    ta.style.height = ta.dataset.originalHeight;
-                });
-            }, 500);
+                window.print();
+
+                setTimeout(() => {
+                    document.title = originalTitle;
+                    restoreAfterExport();
+                }, 500);
+            }, 100);
         }
+
+        function showReferenceInfo() {
+            const htmlContent = `
+                <div style="text-align: left; font-family: 'Kanit', sans-serif; font-size: 14px; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding: 10px;">
+                    
+                    <h3 style="color: #3b82f6; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; margin-top: 0;">1. การเปลี่ยนแปลงแบบมาตรฐาน (Standard Change)</h3>
+                    <ul style="margin-bottom: 20px;">
+                        <li>เป็นการเปลี่ยนแปลงที่มีความเสี่ยงต่ำ</li>
+                        <li>มีขั้นตอนการปฏิบัติที่ชัดเจนและทำเป็นประจำ</li>
+                        <li>ได้รับการอนุมัติล่วงหน้าแล้ว (Pre-approved)</li>
+                        <li><strong>ตัวอย่าง:</strong> การรีเซ็ตรหัสผ่านตามรอบ, การอัปเดตระบบป้องกันไวรัสประจำวัน</li>
+                    </ul>
+
+                    <h3 style="color: #f59e0b; border-bottom: 2px solid #f59e0b; padding-bottom: 5px;">2. การเปลี่ยนแปลงแบบปกติ (Normal Change)</h3>
+                    <ul style="margin-bottom: 20px;">
+                        <li>เป็นการเปลี่ยนแปลงที่มีความเสี่ยงปานกลางถึงสูง</li>
+                        <li>ต้องผ่านกระบวนการประเมินผลกระทบและความเสี่ยง</li>
+                        <li>ต้องได้รับการอนุมัติจากผู้มีอำนาจหรือคณะกรรมการที่ปรึกษาด้านการเปลี่ยนแปลง (CAB - Change Advisory Board) ก่อนดำเนินการ</li>
+                        <li><strong>ตัวอย่าง:</strong> การอัปเกรดเวอร์ชันเซิร์ฟเวอร์หลัก, การเปลี่ยนอุปกรณ์เครือข่าย, การปรับโครงสร้างฐานข้อมูล</li>
+                    </ul>
+
+                    <h3 style="color: #ef4444; border-bottom: 2px solid #ef4444; padding-bottom: 5px;">3. การเปลี่ยนแปลงแบบฉุกเฉิน (Emergency Change)</h3>
+                    <ul style="margin-bottom: 20px;">
+                        <li>เป็นการเปลี่ยนแปลงที่ต้องทำทันทีเพื่อแก้ปัญหาร้ายแรงหรือภัยคุกคามเร่งด่วน</li>
+                        <li>มีขั้นตอนที่รวดเร็วกว่าปกติเพื่อกู้คืนระบบ</li>
+                        <li>มักจะต้องบันทึกผลและขออนุมัติย้อนหลังตามระเบียบขององค์กร</li>
+                    </ul>
+
+                    <h3 style="color: #10b981; border-bottom: 2px solid #10b981; padding-bottom: 5px;">Change Type</h3>
+                    <ul style="margin-bottom: 20px;">
+                        <li><strong>Application / Software:</strong> การติดตั้ง, อัปเดตโค้ด, เปลี่ยนแปลงค่าคอนฟิกของโปรแกรมหรือเว็บไซต์</li>
+                        <li><strong>Database:</strong> การปรับโครงสร้างตาราง (Schema), เพิ่ม/ลด Index, การทำ Data Migration หรือรัน Script แก้ไขข้อมูล</li>
+                        <li><strong>Infrastructure / Hardware:</strong> การเปลี่ยนอุปกรณ์เครือข่าย, เพิ่มแรม/ดิสก์เซิร์ฟเวอร์, การย้ายตู้แร็ค</li>
+                        <li><strong>Network / Security:</strong> การเปิดพอร์ตไฟร์วอลล์ (Firewall Rule), เปลี่ยนแปลงค่า VPN, หรือปรับปรุงระบบความปลอดภัย</li>
+                        <li><strong>Facility / Datacenter:</strong> การซ่อมบำรุงระบบไฟฟ้า ระบบปรับอากาศ หรือเครื่องสำรองไฟของห้องเซิร์ฟเวอร์</li>
+                    </ul>
+
+                    <h3 style="color: #8b5cf6; border-bottom: 2px solid #8b5cf6; padding-bottom: 5px;">All System</h3>
+                    <div style="column-count: 2; column-gap: 20px; font-size: 13px;">
+                        <ul style="margin: 0; padding-left: 20px;">
+                            <li>Pet HIS (iMed X)</li>
+                            <li>Microsoft Dynamics AX</li>
+                            <li>CRM</li>
+                            <li>PACS</li>
+                            <li>BPLUS</li>
+                            <li>LMS</li>
+                            <li>BMS</li>
+                            <li>QUEUE System</li>
+                            <li>Telephony 3CX</li>
+                            <li>Website</li>
+                            <li>Integration/API/n8n</li>
+                            <li>BI & Reporting (Tableau)</li>
+                            <li>Identity & Access Management</li>
+                            <li>Email & Collaboration</li>
+                            <li>File Server/Synology Drive</li>
+                            <li>Network/Internet/MPLS/VPN</li>
+                            <li>Server & Infrastructure</li>
+                            <li>Cybersecurity</li>
+                            <li>Backup & Disaster Recovery</li>
+                            <li>EMAIL SYSTEM</li>
+                            <li>CCTV SYSTEM</li>
+                            <li>Web/Mobile Application (e-Service)</li>
+                            <li>End-user Devices</li>
+                            <li>Other</li>
+                        </ul>
+                    </div>
+
+                </div>
+            `;
+
+            Swal.fire({
+                title: 'Reference Info',
+                html: htmlContent,
+                width: '800px',
+                showCloseButton: true,
+                focusConfirm: false,
+                confirmButtonText: 'ปิด'
+            });
+        }
+    </script>
+
+    <!-- Basic Source Code Protection -->
+    <script>
+        // Disable Right Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable Ctrl+U / Cmd+U (View Source)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollTopBtn" class="scroll-top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Scroll to Top">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // Scroll to Top functionality
+        window.addEventListener('scroll', function() {
+            const btn = document.getElementById('scrollTopBtn');
+            if (window.scrollY > 300) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+        
+        // Auto load saved request if request_no is in URL
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const request_no = urlParams.get('request_no');
+            if (request_no) {
+                const select = $('#select-request-no');
+                if (select.find("option[value='" + request_no + "']").length === 0) {
+                    const newOption = new Option(request_no, request_no, true, true);
+                    select.append(newOption).trigger('change.select2');
+                } else {
+                    select.val(request_no).trigger('change.select2');
+                }
+                document.getElementById('select-request-no').value = request_no;
+                setTimeout(() => { loadRequest(); }, 100);
+            }
+        });
     </script>
 </body>
 </html>

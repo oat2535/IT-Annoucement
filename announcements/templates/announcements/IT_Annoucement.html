@@ -54,6 +54,9 @@
             padding: 15px 25px;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
         }
 
         .btn {
@@ -663,6 +666,33 @@
                 flex-direction: column;
                 gap: 15px;
             }
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #3b82f6;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .scroll-top-btn:hover {
+            background-color: #2563eb;
+            transform: scale(1.1);
+        }
+        @media print {
+            .scroll-top-btn { display: none !important; }
         }
     </style>
     <!-- SweetAlert2 -->
@@ -1318,6 +1348,8 @@
                         text: 'บันทึกข้อมูลเรียบร้อยแล้ว: ' + result.change_no,
                         timer: 2000,
                         showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "{% url 'index' %}?change_no=" + result.change_no;
                     });
                 } else {
                     Swal.fire({
@@ -1429,6 +1461,54 @@
                     }
                 }
             });
+        });
+    </script>
+
+    <!-- Basic Source Code Protection -->
+    <script>
+        // Disable Right Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable Ctrl+U / Cmd+U (View Source)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollTopBtn" class="scroll-top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Scroll to Top">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // Scroll to Top functionality
+        window.addEventListener('scroll', function() {
+            const btn = document.getElementById('scrollTopBtn');
+            if (window.scrollY > 300) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+
+        // Auto load saved request if change_no is in URL
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const change_no = urlParams.get('change_no');
+            if (change_no) {
+                const select = $('#select-change-no');
+                if (select.find("option[value='" + change_no + "']").length === 0) {
+                    const newOption = new Option(change_no, change_no, true, true);
+                    select.append(newOption).trigger('change.select2');
+                } else {
+                    select.val(change_no).trigger('change.select2');
+                }
+                document.getElementById('select-change-no').value = change_no;
+                setTimeout(() => { loadAnnouncement(); }, 100);
+            }
         });
     </script>
 </body>

@@ -1,5 +1,19 @@
 from django.db import models
 import datetime
+import re
+import django.utils.text
+from django.core.exceptions import SuspiciousFileOperation
+
+# Fix Django stripping Thai vowels in uploaded filenames
+def get_valid_filename_thai(name):
+    s = str(name).strip().replace(" ", "_")
+    # Allow Thai characters (\u0E00-\u0E7F) along with alphanumeric, dash, and dot.
+    s = re.sub(r'(?u)[^-\w.\u0E00-\u0E7F]', '', s)
+    if s in {"", ".", ".."}:
+        raise SuspiciousFileOperation("Could not derive file name from '%s'" % name)
+    return s
+
+django.utils.text.get_valid_filename = get_valid_filename_thai
 
 class Announcement(models.Model):
     change_no = models.CharField(max_length=50, unique=True, blank=True)

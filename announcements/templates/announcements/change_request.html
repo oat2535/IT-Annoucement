@@ -22,6 +22,20 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
+    <!-- Document Preview Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- LuckySheet Dependencies for Excel Preview -->
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/css/pluginsCss.css' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/plugins.css' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/css/luckysheet.css' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/assets/iconfont/iconfont.css' />
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luckyexcel/dist/luckyexcel.umd.js"></script>
+    
     <style>
         :root {
             --bg-dark: #1e293b;
@@ -88,13 +102,19 @@
         }
 
         .btn-primary { background-color: #3b82f6; color: white; }
-        .btn-primary:hover { background-color: #2563eb; }
+        .btn-primary:hover { background-color: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        
         .btn-danger { background-color: #ef4444; color: white; }
-        .btn-danger:hover { background-color: #dc2626; }
+        .btn-danger:hover { background-color: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        
         .btn-success { background-color: #10b981; color: white; }
-        .btn-success:hover { background-color: #059669; }
+        .btn-success:hover { background-color: #059669; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        
         .btn-secondary { background-color: #64748b; color: white; }
-        .btn-secondary:hover { background-color: #475569; }
+        .btn-secondary:hover { background-color: #475569; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3); }
+
+        .btn-info { background-color: #0ea5e9; color: white; }
+        .btn-info:hover { background-color: #0284c7; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
 
         .form-container {
             width: 100%;
@@ -385,12 +405,12 @@
             <div>Save as<br>PDF</div>
         </button>
 
-        <button class="btn btn-secondary" onclick="showReferenceInfo()" style="margin-left: 15px; background-color: #64748b; color: white;">
+        <button class="btn btn-secondary" onclick="showReferenceInfo()" style="margin-left: 15px;">
             <i class="fa-solid fa-circle-info"></i>
             <div>Reference<br>Info</div>
         </button>
 
-        <a href="{% url 'change_request_report' %}" class="btn btn-info" style="margin-left: auto; background-color: #0ea5e9; color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+        <a href="{% url 'change_request_report' %}" class="btn btn-info" style="margin-left: auto; text-decoration: none;">
             <i class="fa-solid fa-table-list"></i>
             <div>View<br>Report</div>
         </a>
@@ -749,6 +769,19 @@
         </form>
     </div>
 
+    <!-- Document Preview Modal -->
+    <div id="docPreviewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; width:90%; height:90%; border-radius:12px; display:flex; flex-direction:column; overflow:hidden; position:relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            <div style="padding:15px 25px; background:var(--bg-dark); color:white; display:flex; justify-content:space-between; align-items:center;">
+                <h3 id="docPreviewTitle" style="margin:0; font-family:'Kanit', sans-serif;">พรีวิวเอกสาร</h3>
+                <button type="button" onclick="document.getElementById('docPreviewModal').style.display='none'" style="background:none; border:none; color:white; font-size:28px; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div id="docPreviewContent" style="flex:1; padding:20px; overflow:auto; background:#f1f5f9;">
+                <!-- Content goes here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         $(document).ready(function() {
             $('#system_affected').select2({
@@ -846,6 +879,83 @@
                             }
                         });
 
+                        // Display existing attachments
+                        const previewContainer = document.getElementById('file-preview-container');
+                        if (data.attachments && data.attachments.length > 0) {
+                            data.attachments.forEach(att => {
+                                const item = document.createElement('div');
+                                item.style.border = '1px solid #cbd5e1';
+                                item.style.padding = '5px 10px';
+                                item.style.borderRadius = '6px';
+                                item.style.backgroundColor = '#f8fafc';
+                                item.style.fontSize = '14px';
+                                item.style.display = 'flex';
+                                item.style.alignItems = 'center';
+                                item.style.justifyContent = 'space-between';
+                                item.style.gap = '5px';
+                                item.style.width = '100%';
+
+                                const leftDiv = document.createElement('div');
+                                leftDiv.style.display = 'flex';
+                                leftDiv.style.alignItems = 'center';
+                                leftDiv.style.gap = '5px';
+                                
+                                let icon = 'fa-file';
+                                const nameLower = att.name.toLowerCase();
+                                if (nameLower.endsWith('.pdf')) icon = 'fa-file-pdf';
+                                else if (nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/)) icon = 'fa-file-image';
+                                else if (nameLower.match(/\.(doc|docx)$/)) icon = 'fa-file-word';
+                                else if (nameLower.match(/\.(xls|xlsx)$/)) icon = 'fa-file-excel';
+
+                                leftDiv.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${att.name}</span>`;
+                                
+                                const rightDiv = document.createElement('div');
+                                rightDiv.style.display = 'flex';
+                                rightDiv.style.gap = '8px';
+                                const previewBtn = document.createElement('a');
+                                
+                                const isWord = nameLower.match(/\.(doc|docx)$/);
+                                const isExcel = nameLower.match(/\.(xls|xlsx)$/);
+                                const isPdf = nameLower.match(/\.pdf$/);
+                                const isImage = nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/);
+                                
+                                if (isWord || isExcel || isPdf || isImage) {
+                                    previewBtn.href = 'javascript:void(0)';
+                                    previewBtn.onclick = function(e) { 
+                                        e.preventDefault();
+                                        previewDocument(att.url, isWord ? 'word' : (isExcel ? 'excel' : (isPdf ? 'pdf' : 'image')), att.name, att.id); 
+                                    };
+                                } else {
+                                    previewBtn.href = att.url;
+                                    previewBtn.target = '_blank';
+                                }
+                                
+                                previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> พรีวิว';
+                                previewBtn.className = 'btn btn-info';
+                                previewBtn.style.padding = '4px 8px';
+                                previewBtn.style.fontSize = '12px';
+                                previewBtn.style.minHeight = 'auto';
+                                previewBtn.style.textDecoration = 'none';
+                                
+                                rightDiv.appendChild(previewBtn);
+
+                                const downloadBtn = document.createElement('a');
+                                downloadBtn.href = att.url;
+                                downloadBtn.download = att.name;
+                                downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> ดาวน์โหลด';
+                                downloadBtn.className = 'btn btn-success';
+                                downloadBtn.style.padding = '4px 8px';
+                                downloadBtn.style.fontSize = '12px';
+                                downloadBtn.style.minHeight = 'auto';
+                                downloadBtn.style.textDecoration = 'none';
+                                rightDiv.appendChild(downloadBtn);
+
+                                item.appendChild(leftDiv);
+                                item.appendChild(rightDiv);
+                                previewContainer.appendChild(item);
+                            });
+                        }
+
                         document.getElementById('display-request-no').innerText = requestNo;
                         isSavedToDB = true;
                         currentRequestNo = requestNo;
@@ -869,6 +979,158 @@
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }
+                });
+        }
+
+        function previewDocument(url, type, filename, fileId = null) {
+            document.getElementById('docPreviewTitle').innerText = 'พรีวิว: ' + filename;
+            const contentDiv = document.getElementById('docPreviewContent');
+            
+            // For saved Word files, use Backend PDF generation for perfect layout
+            if (type === 'word' && fileId) {
+                document.getElementById('docPreviewModal').style.display = 'flex';
+                contentDiv.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%; flex-direction:column;"><i class="fa-solid fa-spinner fa-spin fa-3x" style="color:#64748b; margin-bottom:15px;"></i><h3 style="color:#64748b; font-family:Kanit;">กำลังเตรียมเอกสาร PDF สำหรับไฟล์ Word...</h3><p style="color:#94a3b8;">อาจใช้เวลา 10-15 วินาที สำหรับการเปิดครั้งแรก</p></div>';
+                
+                fetch(`/api/preview_document/?id=${fileId}`)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Network error');
+                        return res.blob();
+                    })
+                    .then(blob => {
+                        const pdfUrl = URL.createObjectURL(blob);
+                        contentDiv.innerHTML = `<iframe src="${pdfUrl}#toolbar=0" width="100%" height="100%" style="border:none; border-radius:8px;"></iframe>`;
+                    })
+                    .catch(err => {
+                        contentDiv.innerHTML = '<div style="color:red; text-align:center; padding:40px;"><h3>เกิดข้อผิดพลาดในการโหลดเอกสารจากเซิร์ฟเวอร์</h3></div>';
+                    });
+                return;
+            }
+
+            if (type === 'image') {
+                document.getElementById('docPreviewModal').style.display = 'flex';
+                contentDiv.innerHTML = `<img src="${url}" style="max-width:100%; max-height:100%; border-radius:8px; object-fit:contain; display:block; margin:auto;" />`;
+                return;
+            }
+
+            if (type === 'pdf') {
+                document.getElementById('docPreviewModal').style.display = 'flex';
+                contentDiv.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%; flex-direction:column;"><i class="fa-solid fa-spinner fa-spin fa-3x" style="color:#64748b; margin-bottom:15px;"></i><h3 style="color:#64748b; font-family:Kanit;">กำลังโหลดเอกสาร PDF...</h3></div>';
+                
+                fetch(url)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Network error');
+                        return res.blob();
+                    })
+                    .then(blob => {
+                        const pdfUrl = URL.createObjectURL(blob);
+                        contentDiv.innerHTML = `<iframe src="${pdfUrl}#toolbar=0" width="100%" height="100%" style="border:none; border-radius:8px;"></iframe>`;
+                    })
+                    .catch(err => {
+                        contentDiv.innerHTML = '<div style="color:red; text-align:center; padding:40px;"><h3>เกิดข้อผิดพลาดในการโหลดเอกสาร</h3></div>';
+                    });
+                return;
+            }
+
+            Swal.fire({ title: 'กำลังโหลดเอกสาร...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            fetch(url)
+                .then(res => res.blob())
+                .then(blob => {
+                    contentDiv.innerHTML = '';
+                    document.getElementById('docPreviewModal').style.display = 'flex';
+                    
+                    if (type === 'word') {
+                        if (filename.toLowerCase().endsWith('.doc')) {
+                            Swal.close();
+                            contentDiv.innerHTML = '<div style="color:#ef4444; text-align:center; padding:40px; background:white; border-radius:8px;"><h3>ไม่สามารถพรีวิวไฟล์ .doc (เวอร์ชันเก่า) ได้</h3><p>ระบบรองรับการพรีวิวเฉพาะไฟล์ .docx เท่านั้น โปรดคลิกพรีวิวจากเบราว์เซอร์เพื่อดาวน์โหลดแทน</p></div>';
+                            return;
+                        }
+                        
+                        const container = document.createElement('div');
+                        container.style.width = '100%';
+                        contentDiv.appendChild(container);
+                        
+                        const docxOptions = {
+                            inWrapper: true,
+                            ignoreWidth: false,
+                            ignoreHeight: false,
+                            ignoreFonts: false,
+                            breakPages: true
+                        };
+                        
+                        docx.renderAsync(blob, container, null, docxOptions)
+                            .then(() => { Swal.close(); })
+                            .catch(err => {
+                                Swal.close();
+                                contentDiv.innerHTML = '<div style="color:red; text-align:center;">เกิดข้อผิดพลาดในการพรีวิวไฟล์ Word</div>';
+                            });
+                    } else if (type === 'excel') {
+                        if (filename.toLowerCase().endsWith('.xls')) {
+                            // Fallback to SheetJS for old .xls
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                try {
+                                    const data = new Uint8Array(e.target.result);
+                                    const workbook = XLSX.read(data, {type: 'array'});
+                                    const firstSheetName = workbook.SheetNames[0];
+                                    const worksheet = workbook.Sheets[firstSheetName];
+                                    const html = XLSX.utils.sheet_to_html(worksheet, { id: 'excel-preview-table' });
+                                    
+                                    contentDiv.innerHTML = `<div style="padding:10px; font-family:'Calibri', 'Kanit', sans-serif;">
+                                        <h4 style="margin-top:0; margin-bottom:15px; color:#334155;">Sheet: ${firstSheetName} (ไฟล์ Excel เก่า)</h4>
+                                        <div style="background:white; display:inline-block; min-width:100%; box-shadow:0 1px 4px rgba(0,0,0,0.1); border-radius:4px; overflow:auto;">
+                                        <style>
+                                            #excel-preview-table { border-collapse: collapse; font-size: 14px; width: max-content; min-width: 100%; }
+                                            #excel-preview-table td, #excel-preview-table th { border: 1px solid #d4d4d4; padding: 6px 10px; white-space: nowrap; vertical-align: bottom; empty-cells: show; }
+                                            #excel-preview-table td:empty::after { content: '\\00a0'; }
+                                        </style>
+                                        ${html}
+                                        </div>
+                                    </div>`;
+                                    Swal.close();
+                                } catch (err) {
+                                    Swal.close();
+                                    contentDiv.innerHTML = '<div style="color:red; text-align:center;">เกิดข้อผิดพลาดในการอ่านไฟล์ Excel</div>';
+                                }
+                            };
+                            reader.readAsArrayBuffer(blob);
+                        } else {
+                            // Use LuckySheet for .xlsx
+                            const file = new File([blob], filename);
+                            contentDiv.innerHTML = '<div id="luckysheet-preview" style="margin:0px;padding:0px;width:100%;height:100%;"></div>';
+                            
+                            LuckyExcel.transformExcelToLucky(file, function(exportJson, luckysheetfile){
+                                if(exportJson.sheets==null || exportJson.sheets.length==0){
+                                    Swal.fire('ข้อผิดพลาด', 'อ่านไฟล์ Excel ไม่สำเร็จ', 'error');
+                                    return;
+                                }
+                                if(window.luckysheet) {
+                                    window.luckysheet.destroy();
+                                }
+                                window.luckysheet.create({
+                                    container: 'luckysheet-preview',
+                                    showinfobar: false,
+                                    data: exportJson.sheets,
+                                    title: exportJson.info.name,
+                                    userInfo: exportJson.info.name.creator,
+                                    lang: 'en',
+                                    showtoolbar: false,
+                                    showstatisticBar: true,
+                                    sheetBottomConfig: true,
+                                    allowEdit: false,
+                                    enableAddRow: false,
+                                    enableAddBackTop: false
+                                });
+                                Swal.close();
+                            }, function(err){
+                                Swal.close();
+                                contentDiv.innerHTML = '<div style="color:red; text-align:center;">เกิดข้อผิดพลาดในการอ่านไฟล์ Excel (อาจมีรหัสผ่านป้องกันหรือโครงสร้างไฟล์มีปัญหา)</div>';
+                            });
+                        }
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดไฟล์ได้', 'error');
                 });
         }
 
@@ -925,6 +1187,48 @@
                 leftDiv.innerHTML += `<i class="fa-solid ${icon}"></i> <span>${file.name}</span>`;
                 
                 const rightDiv = document.createElement('div');
+                rightDiv.style.display = 'flex';
+                rightDiv.style.gap = '10px';
+                
+                // Add preview button for newly selected files
+                const previewBtn = document.createElement('a');
+                const fileUrl = URL.createObjectURL(file);
+                const nameLower = file.name.toLowerCase();
+                const isWord = nameLower.match(/\.(doc|docx)$/);
+                const isExcel = nameLower.match(/\.(xls|xlsx)$/);
+                const isPdf = nameLower.match(/\.pdf$/);
+                const isImage = nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/);
+                
+                if (isWord || isExcel || isPdf || isImage) {
+                    previewBtn.href = 'javascript:void(0)';
+                    previewBtn.onclick = function(e) { 
+                        e.preventDefault();
+                        previewDocument(fileUrl, isWord ? 'word' : (isExcel ? 'excel' : (isPdf ? 'pdf' : 'image')), file.name); 
+                    };
+                } else {
+                    previewBtn.href = fileUrl;
+                    previewBtn.target = '_blank';
+                }
+                previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> พรีวิว';
+                previewBtn.className = 'btn btn-info';
+                previewBtn.style.padding = '2px 8px';
+                previewBtn.style.fontSize = '12px';
+                previewBtn.style.minHeight = 'auto';
+                previewBtn.style.textDecoration = 'none';
+                
+                rightDiv.appendChild(previewBtn);
+
+                const downloadBtn = document.createElement('a');
+                downloadBtn.href = fileUrl;
+                downloadBtn.download = file.name;
+                downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> ดาวน์โหลด';
+                downloadBtn.className = 'btn btn-success';
+                downloadBtn.style.padding = '2px 8px';
+                downloadBtn.style.fontSize = '12px';
+                downloadBtn.style.minHeight = 'auto';
+                downloadBtn.style.textDecoration = 'none';
+                rightDiv.appendChild(downloadBtn);
+
                 const removeBtn = document.createElement('button');
                 removeBtn.type = 'button';
                 removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
@@ -945,12 +1249,47 @@
         }
 
         document.getElementById('attachments').addEventListener('change', function(e) {
+            const allowedTypes = [
+                'application/pdf', 
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'application/vnd.ms-excel', 
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            const allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'xls', 'xlsx', 'doc', 'docx'];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            let hasError = false;
+            let errorMessage = '';
+
             Array.from(e.target.files).forEach(file => {
-                const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
-                if (!isDuplicate) {
-                    selectedFiles.push(file);
+                const ext = file.name.split('.').pop().toLowerCase();
+                let isValidType = allowedTypes.includes(file.type) || allowedExts.includes(ext);
+
+                if (!isValidType) {
+                    hasError = true;
+                    errorMessage += `ไฟล์ ${file.name} ไม่ใช่ประเภทที่รองรับ (ต้องเป็น PDF, รูปภาพ, Excel หรือ Word เท่านั้น)<br>`;
+                } else if (file.size > maxSize) {
+                    hasError = true;
+                    errorMessage += `ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (ต้องไม่เกิน 10MB)<br>`;
+                } else {
+                    const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+                    if (!isDuplicate) {
+                        selectedFiles.push(file);
+                    }
                 }
             });
+
+            if (hasError) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'พบข้อผิดพลาดการแนบไฟล์',
+                    html: errorMessage
+                });
+            }
+
+            e.target.value = ''; 
             updateFilePreview();
         });
 
@@ -1071,6 +1410,12 @@
             // Hide non-printable elements
             document.getElementById('toolbar').style.display = 'none';
             document.getElementById('attachments').style.display = 'none';
+            
+            // Hide preview and download buttons
+            document.querySelectorAll('#file-preview-container .btn, #file-preview-container button').forEach(el => {
+                el.dataset.exportOriginalDisplay = el.style.display;
+                el.style.setProperty('display', 'none', 'important');
+            });
 
             // Force a fixed width for export to prevent layout distortion on smaller screens (overridden by print CSS)
             const exportArea = document.getElementById('export-area');
@@ -1151,6 +1496,11 @@
         function restoreAfterExport() {
             document.getElementById('toolbar').style.display = 'flex';
             document.getElementById('attachments').style.display = 'block';
+
+            // Restore preview and download buttons
+            document.querySelectorAll('#file-preview-container .btn, #file-preview-container button').forEach(el => {
+                el.style.display = el.dataset.exportOriginalDisplay || '';
+            });
 
             const exportArea = document.getElementById('export-area');
             exportArea.style.width = exportArea.dataset.originalWidth;

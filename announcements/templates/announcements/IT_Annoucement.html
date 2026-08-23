@@ -122,6 +122,16 @@
             box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
         }
 
+        .btn-purple {
+            background-color: #8b5cf6;
+            color: white;
+        }
+        .btn-purple:hover {
+            background-color: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
         /* Main Announcement Container */
         .announcement-container {
             width: 100%;
@@ -716,7 +726,7 @@
                 <option value="{{ ann.change_no }}">{{ ann.change_no }} - {{ ann.subject }}</option>
             {% endfor %}
         </select>
-        <a href="{% url 'change_request' %}" class="btn" style="background-color: #8b5cf6; color: white; text-decoration: none;">
+        <a href="{% url 'change_request' %}" class="btn btn-purple" style="text-decoration: none;">
             <i class="fa-solid fa-file-signature"></i>
             <div>Change<br>Request</div>
         </a>

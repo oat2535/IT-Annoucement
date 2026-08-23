@@ -306,6 +306,7 @@ def get_change_request(request):
             'evaluator_date': cr.evaluator_date.isoformat() if cr.evaluator_date else '',
             'approver_name': cr.approver_name,
             'approver_date': cr.approver_date.isoformat() if cr.approver_date else '',
+            'attachments': [{'id': att.id, 'name': att.file.name.split('/')[-1], 'url': att.file.url} for att in cr.attachments.all()]
         }
         return JsonResponse({'status': 'success', 'data': data})
     except Exception as e:
@@ -390,3 +391,102 @@ def export_change_request_csv(request):
         ])
         
     return response
+
+
+
+def preview_document(request):
+    import os
+    from django.http import HttpResponse, Http404, JsonResponse
+    from django.shortcuts import redirect
+    
+    attachment_id = request.GET.get('id')
+    if not attachment_id:
+        return JsonResponse({'status': 'error', 'message': 'Missing attachment id'}, status=400)
+        
+    try:
+        from .models import ChangeRequestAttachment
+        att = ChangeRequestAttachment.objects.get(id=attachment_id)
+        
+        original_path = att.file.path
+        if not os.path.exists(original_path):
+            return Http404("File not found")
+            
+        ext = os.path.splitext(original_path)[1].lower()
+        
+        if ext == '.pdf' or ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+            return redirect(att.file.url)
+            
+        # We only strictly need this for Word now, but leaving Excel just in case
+        if ext in ['.doc', '.docx', '.xls', '.xlsx']:
+            pdf_path = os.path.splitext(original_path)[0] + '.pdf'
+            
+            if not os.path.exists(pdf_path):
+                import subprocess
+                
+                # 1. Try LibreOffice first
+                libreoffice_paths = [
+                    'soffice',
+                    'libreoffice',
+                    r'C:\Program Files\LibreOffice\program\soffice.exe',
+                    r'C:\Program Files (x86)\LibreOffice\program\soffice.exe'
+                ]
+                
+                lo_success = False
+                for lo_cmd in libreoffice_paths:
+                    try:
+                        subprocess.run([lo_cmd, '--version'], capture_output=True, check=True)
+                        subprocess.run([
+                            lo_cmd, '--headless', '--convert-to', 'pdf', 
+                            os.path.abspath(original_path), '--outdir', os.path.dirname(os.path.abspath(original_path))
+                        ], check=True)
+                        if os.path.exists(pdf_path):
+                            lo_success = True
+                            break
+                    except Exception:
+                        continue
+                
+                # 2. Fallback to MS Office via win32com
+                if not lo_success or not os.path.exists(pdf_path):
+                    try:
+                        import pythoncom
+                        import win32com.client
+                    except ImportError:
+                        return JsonResponse({'status': 'error', 'message': 'LibreOffice is required for previewing Word documents on Linux servers.'}, status=500)
+                    
+                    pythoncom.CoInitialize()
+                    try:
+                        if ext in ['.doc', '.docx']:
+                            word = win32com.client.Dispatch('Word.Application')
+                            word.Visible = False
+                            doc = word.Documents.Open(os.path.abspath(original_path))
+                            doc.SaveAs(os.path.abspath(pdf_path), FileFormat=17)
+                            doc.Close(False)
+                            word.Quit()
+                        elif ext in ['.xls', '.xlsx']:
+                            excel = win32com.client.Dispatch('Excel.Application')
+                            excel.Visible = False
+                            excel.DisplayAlerts = False
+                            wb = excel.Workbooks.Open(os.path.abspath(original_path))
+                            wb.ExportAsFixedFormat(0, os.path.abspath(pdf_path))
+                            wb.Close(False)
+                            excel.Quit()
+                    except Exception as e:
+                        pythoncom.CoUninitialize()
+                        return JsonResponse({'status': 'error', 'message': f'Error converting file: {str(e)}'}, status=500)
+                    finally:
+                        pythoncom.CoUninitialize()
+            
+            if os.path.exists(pdf_path):
+                with open(pdf_path, 'rb') as pdf_file:
+                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+                    response['Content-Disposition'] = 'inline; filename="preview.pdf"'
+                    return response
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Failed to generate PDF'}, status=500)
+                
+        return redirect(att.file.url)
+                
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+

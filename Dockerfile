@@ -14,6 +14,9 @@ WORKDIR /app
 # (ทำแยกเพื่อใช้ประโยชน์จาก Docker Cache Layer หากไม่มีการแก้ไฟล์นี้)
 COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
+# ติดตั้ง LibreOffice และ Font ภาษาไทย สำหรับแปลงไฟล์ Word เป็น PDF
+RUN apk add --no-cache libreoffice font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-thai
+
 
 # คัดลอกไฟล์โปรเจคทั้งหมดใน Folder ปัจจุบัน เข้าสู่ Container
 COPY . /app/

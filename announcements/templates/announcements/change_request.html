@@ -18,10 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
     <!-- Document Preview Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
@@ -35,6 +32,9 @@
     <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luckyexcel/dist/luckyexcel.umd.js"></script>
+    
+    <!-- Select2 JS (Moved after Luckysheet to avoid jQuery overwrite) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
         :root {
@@ -74,6 +74,16 @@
             position: sticky;
             top: 20px;
             z-index: 1000;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+        .toolbar::-webkit-scrollbar {
+            display: none;
+        }
+        .toolbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
         .btn {
@@ -268,6 +278,44 @@
             font-family: inherit;
         }
 
+        /* --- Responsive Styles for Mobile/Tablet --- */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+            .form-container {
+                padding: 20px 15px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .signature-section {
+                flex-direction: column;
+                gap: 40px;
+            }
+            h2.form-title {
+                font-size: 18px;
+            }
+            h2.form-title span {
+                font-size: 14px;
+            }
+            /* Override the header grid layout for mobile */
+            div[style*="grid-template-columns: auto 1fr auto"] {
+                grid-template-columns: 1fr !important;
+                text-align: center !important;
+                gap: 10px !important;
+            }
+            div[style*="grid-template-columns: auto 1fr auto"] > div {
+                text-align: center !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+            .header-logo {
+                margin-left: 0 !important;
+            }
+        }
+
         /* --- Print Styles for A4 Native PDF Export --- */
         @media print {
             @page {
@@ -334,11 +382,10 @@
             }
             #fm-code {
                 position: fixed !important;
-                bottom: 5mm !important;
-                right: 15mm !important;
+                bottom: 0 !important;
+                right: 5mm !important;
                 margin: 0 !important;
-                background-color: white;
-                padding-left: 10px;
+                background-color: transparent !important;
             }
             .signature-input, .signature-date {
                 border: none !important;
@@ -417,6 +464,19 @@
     </div>
 
     <div class="form-container" id="export-area">
+        <!-- Native table structure for perfect repeating footer and page breaks in Chrome -->
+        <table style="width: 100%; border: none; border-collapse: collapse;">
+            <tfoot style="display: table-footer-group;">
+                <tr>
+                    <td style="padding: 0; border: none; height: 50px; vertical-align: bottom;">
+                        <!-- Spacer to reserve room at the bottom of intermediate pages -->
+                    </td>
+                </tr>
+            </tfoot>
+            <tbody style="display: table-row-group;">
+                <tr>
+                    <td style="padding: 0; border: none;">
+                        <form id="cr-form" enctype="multipart/form-data">
             <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px;">
             <div style="text-align: left;">
                 <img src="{% static 'logo.png' %}" alt="Logo" class="header-logo" style="height: 45px; margin-left: -20px;">
@@ -428,8 +488,6 @@
                 <div style="font-size: 14px;">Request No. :<br><span id="display-request-no">{{ next_request_no }}</span></div>
             </div>
         </div>
-
-        <form id="cr-form" enctype="multipart/form-data">
                 <!-- 0. การจัดประเภท (Categorization) / ข้อมูลการเปลี่ยนแปลง -->
             <div class="print-section" style="margin-bottom: 20px;">
                 <div class="form-row">
@@ -762,11 +820,15 @@
             </div>
 
             </div>
-            <div id="fm-code" style="text-align: right; margin-top: 30px; font-size: 14px; font-weight: bold; color: #64748b;">
-                FM-IT-029/0
-            </div>
-
-        </form>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div id="fm-code" style="text-align: right; margin-top: 30px; font-size: 14px; font-weight: bold; color: #64748b;">
+            FM-IT-029/0
+        </div>
     </div>
 
     <!-- Document Preview Modal -->
@@ -786,11 +848,13 @@
         $(document).ready(function() {
             $('#system_affected').select2({
                 placeholder: "-- Select --",
-                allowClear: true
+                allowClear: true,
+                width: '100%'
             });
             $('#branch_location').select2({
                 placeholder: "-- Select --",
-                allowClear: true
+                allowClear: true,
+                width: '100%'
             });
         });
 
@@ -1673,21 +1737,94 @@
                 btn.style.display = 'none';
             }
         });
-        
-        // Auto load saved request if request_no is in URL
-        $(document).ready(function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const request_no = urlParams.get('request_no');
-            if (request_no) {
-                const select = $('#select-request-no');
-                if (select.find("option[value='" + request_no + "']").length === 0) {
-                    const newOption = new Option(request_no, request_no, true, true);
-                    select.append(newOption).trigger('change.select2');
-                } else {
-                    select.val(request_no).trigger('change.select2');
+        // Auto load saved request from Django context
+        document.addEventListener("DOMContentLoaded", function() {
+            const hasReqObj = "{{ req_obj|yesno:'true,false' }}" === "true";
+            if (hasReqObj) {
+                const reqData = JSON.parse('{{ req_data_json|escapejs }}');
+                const reqFiles = JSON.parse('{{ req_files_json|escapejs }}');
+                
+                // Populate fields
+                for (const [key, val] of Object.entries(reqData)) {
+                    if (val === null) continue;
+                    
+                    const inputs = document.querySelectorAll(`[name="${key}"]`);
+                    if (!inputs.length) continue;
+                    
+                    const firstType = inputs[0].type;
+                    if (firstType === 'radio' || firstType === 'checkbox') {
+                        inputs.forEach(input => {
+                            if (typeof val === 'string' && val.split(', ').includes(input.value)) {
+                                input.checked = true;
+                            } else if (val === true && (input.value === 'true' || input.value === 'Yes')) {
+                                input.checked = true;
+                            } else if (val === false && (input.value === 'false' || input.value === 'No')) {
+                                input.checked = true;
+                            } else if (String(val) === String(input.value)) {
+                                input.checked = true;
+                            }
+                        });
+                    } else {
+                        inputs[0].value = val;
+                    }
                 }
-                document.getElementById('select-request-no').value = request_no;
-                setTimeout(() => { loadRequest(); }, 100);
+                
+                // Populate select fields (they were ignored by standard inputs sometimes if custom)
+                document.querySelectorAll('select').forEach(sel => {
+                    if(reqData[sel.name]) {
+                        sel.value = reqData[sel.name];
+                        if (window.jQuery) {
+                            $(sel).trigger('change');
+                        }
+                    }
+                });
+                
+                // Disable all form elements to make it View Mode
+                const formElements = document.getElementById('cr-form').elements;
+                for (let i = 0; i < formElements.length; i++) {
+                    formElements[i].disabled = true;
+                }
+                
+                // Hide Save button
+                const saveBtn = document.getElementById('save-btn');
+                if (saveBtn) saveBtn.style.display = 'none';
+                
+                // Populate file previews
+                if (reqFiles.length > 0) {
+                    const previewContainer = document.getElementById('file-preview-container');
+                    previewContainer.innerHTML = '';
+                    
+                    reqFiles.forEach(file => {
+                        const item = document.createElement('div');
+                        item.style.border = '1px solid #cbd5e1';
+                        item.style.padding = '5px 10px';
+                        item.style.borderRadius = '6px';
+                        item.style.backgroundColor = '#f8fafc';
+                        item.style.fontSize = '14px';
+                        item.style.display = 'flex';
+                        item.style.alignItems = 'center';
+                        item.style.justifyContent = 'space-between';
+                        item.style.gap = '5px';
+                        item.style.width = '100%';
+
+                        const leftDiv = document.createElement('div');
+                        leftDiv.innerHTML = `<i class="fa-solid fa-file"></i> <span>${file.name}</span>`;
+                        
+                        const rightDiv = document.createElement('div');
+                        rightDiv.innerHTML = `
+                            <a href="${file.url}" target="_blank" class="btn btn-info" style="padding: 2px 8px; font-size: 12px; min-height: auto; text-decoration: none;">
+                                <i class="fa-solid fa-eye"></i> ดูไฟล์
+                            </a>
+                            <a href="${file.url}" download="${file.name}" class="btn btn-success" style="padding: 2px 8px; font-size: 12px; min-height: auto; text-decoration: none;">
+                                <i class="fa-solid fa-download"></i> โหลด
+                            </a>
+                        `;
+                        
+                        item.appendChild(leftDiv);
+                        item.appendChild(rightDiv);
+                        previewContainer.appendChild(item);
+                    });
+                }
             }
         });
     </script>

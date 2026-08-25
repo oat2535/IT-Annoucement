@@ -14,9 +14,14 @@ WORKDIR /app
 # (ทำแยกเพื่อใช้ประโยชน์จาก Docker Cache Layer หากไม่มีการแก้ไฟล์นี้)
 COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
-# ติดตั้ง LibreOffice และ Font ภาษาไทย สำหรับแปลงไฟล์ Word เป็น PDF
+# ติดตั้ง LibreOffice และ Font ภาษาไทยพื้นฐาน
 RUN apk add --no-cache libreoffice font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-thai
 
+# (Optional) คัดลอก Font จาก Windows (เช่น Tahoma, TH Sarabun) เข้าไปใน Container
+# เพื่อแก้ปัญหา Layout ไฟล์ Word เพี้ยนเมื่อแปลงด้วย LibreOffice
+# วิธีทำ: สร้างโฟลเดอร์ fonts ในโปรเจค แล้วนำไฟล์ .ttf จาก C:\Windows\Fonts มาใส่
+COPY fonts/ /usr/share/fonts/custom/
+RUN fc-cache -f -v
 
 # คัดลอกไฟล์โปรเจคทั้งหมดใน Folder ปัจจุบัน เข้าสู่ Container
 COPY . /app/

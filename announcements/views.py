@@ -159,18 +159,52 @@ def export_csv(request):
     return response
 
 def change_request_view(request):
-    from .models import ChangeRequest, ChangeType, ChangeCategory, SystemAffected, BranchLocation, RiskLevel
+    from .models import ChangeRequest, ChangeType, ChangeCategory, SystemAffected, BranchLocation, RiskLevel, ChangeRequestAttachment
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
+    from django.forms.models import model_to_dict
+
     next_request_no = ChangeRequest.get_next_request_no()
     all_requests = ChangeRequest.objects.all().order_by('-id')
     
+    request_no = request.GET.get('request_no')
+    req_obj = None
+    req_data_json = "{}"
+    req_files = []
+    
+    if request_no:
+        try:
+            req_obj = ChangeRequest.objects.get(request_no=request_no)
+            req_dict = model_to_dict(req_obj)
+            # format dates for html input type="date"
+            if req_obj.start_date: req_dict['start_date'] = req_obj.start_date.strftime('%Y-%m-%d')
+            if req_obj.end_date: req_dict['end_date'] = req_obj.end_date.strftime('%Y-%m-%d')
+            if req_obj.requester_date: req_dict['requester_date'] = req_obj.requester_date.strftime('%Y-%m-%d')
+            if req_obj.evaluator_date: req_dict['evaluator_date'] = req_obj.evaluator_date.strftime('%Y-%m-%d')
+            if req_obj.approver_date: req_dict['approver_date'] = req_obj.approver_date.strftime('%Y-%m-%d')
+            
+            req_data_json = json.dumps(req_dict, cls=DjangoJSONEncoder)
+            
+            attachments = ChangeRequestAttachment.objects.filter(change_request=req_obj)
+            for att in attachments:
+                req_files.append({
+                    'name': att.file.name.split('/')[-1],
+                    'url': att.file.url
+                })
+        except ChangeRequest.DoesNotExist:
+            pass
+    
     context = {
-        'next_request_no': next_request_no,
+        'next_request_no': req_obj.request_no if req_obj else next_request_no,
         'all_requests': all_requests,
         'change_types': ChangeType.objects.all(),
         'change_categories': ChangeCategory.objects.all(),
         'systems': SystemAffected.objects.all(),
         'branches': BranchLocation.objects.all(),
-        'risks': RiskLevel.objects.all()
+        'risks': RiskLevel.objects.all(),
+        'req_obj': req_obj,
+        'req_data_json': req_data_json,
+        'req_files_json': json.dumps(req_files)
     }
     return render(request, 'announcements/change_request.html', context)
 

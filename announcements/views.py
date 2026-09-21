@@ -195,7 +195,8 @@ def change_request_view(request):
             pass
     
     context = {
-        'next_request_no': req_obj.request_no if req_obj else next_request_no,
+        'next_request_no': next_request_no,
+        'current_request_no': req_obj.request_no if req_obj else next_request_no,
         'all_requests': all_requests,
         'change_types': ChangeType.objects.all(),
         'change_categories': ChangeCategory.objects.all(),

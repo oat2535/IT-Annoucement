@@ -434,9 +434,9 @@
             <div>กลับหน้า<br>หลัก</div>
         </a>
         <select id="select-request-no" class="btn" style="border: 1px solid #cbd5e1; background: #f8fafc; margin-left: 15px; max-width: 300px;" onchange="loadRequest()">
-            <option value="">-- สร้างใหม่ ({{ next_request_no }}) --</option>
+            <option value="" {% if not req_obj %}selected{% endif %}>-- สร้างใหม่ ({{ next_request_no }}) --</option>
             {% for req in all_requests %}
-                <option value="{{ req.request_no }}">{{ req.request_no }} - {{ req.project_name }}</option>
+                <option value="{{ req.request_no }}" {% if req_obj and req_obj.request_no == req.request_no %}selected{% endif %}>{{ req.request_no }} - {{ req.project_name }}</option>
             {% endfor %}
         </select>
         <button class="btn btn-success" id="save-btn" onclick="saveToDB()" style="margin-left: 15px;">
@@ -485,7 +485,7 @@
                 แบบคำขออนุญาต แก้ไข/เปลี่ยนแปลง/ติดตั้ง ระบบงานเทคโนโลยีสารสนเทศ<br><span style="font-size: 16px;">(Information Technology System Change Request Form)</span>
             </h2>
             <div style="text-align: right; font-weight: bold; color: var(--accent-blue); display: flex; flex-direction: column; justify-content: center;">
-                <div style="font-size: 14px;">Request No. :<br><span id="display-request-no">{{ next_request_no }}</span></div>
+                <div style="font-size: 14px;">Request No. :<br><span id="display-request-no">{{ current_request_no }}</span></div>
             </div>
         </div>
                 <!-- 0. การจัดประเภท (Categorization) / ข้อมูลการเปลี่ยนแปลง -->
@@ -859,7 +859,7 @@
         });
 
         let isSavedToDB = false;
-        let currentRequestNo = '{{ next_request_no }}';
+        let currentRequestNo = '{{ current_request_no }}';
         let selectedFiles = [];
 
         function loadRequest() {

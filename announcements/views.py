@@ -1,15 +1,20 @@
 import json
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from .models import Announcement
+from .utils import format_operate_date_defaults
 
 def index(request):
     next_change_no = Announcement.get_next_change_no()
-    all_announcements = Announcement.objects.all().order_by('-id')
+    all_announcements = Announcement.objects.only('id', 'change_no', 'subject').order_by('-id')
+    default_operate_date_th, default_operate_date_en = format_operate_date_defaults(timezone.localdate())
     return render(request, 'announcements/IT_Annoucement.html', {
         'next_change_no': next_change_no,
-        'all_announcements': all_announcements
+        'all_announcements': all_announcements,
+        'default_operate_date_th': default_operate_date_th,
+        'default_operate_date_en': default_operate_date_en,
     })
 
 @csrf_exempt
@@ -27,6 +32,8 @@ def save_announcement(request):
                     announcement.operate_time = data.get('operate_time', '')
                     announcement.user_operate = data.get('user_operate', '')
                     announcement.remark = data.get('remark', '')
+                    announcement.alert_badge = data.get('alert_badge', '')
+                    announcement.alert_message = data.get('alert_message', '')
                     announcement.save()
                 except Announcement.DoesNotExist:
                     # Create a new announcement from the received data if not exists somehow
@@ -36,7 +43,9 @@ def save_announcement(request):
                         operate_date=data.get('operate_date', ''),
                         operate_time=data.get('operate_time', ''),
                         user_operate=data.get('user_operate', ''),
-                        remark=data.get('remark', '')
+                        remark=data.get('remark', ''),
+                        alert_badge=data.get('alert_badge', ''),
+                        alert_message=data.get('alert_message', '')
                     )
                     announcement.save()
             else:
@@ -46,7 +55,9 @@ def save_announcement(request):
                     operate_date=data.get('operate_date', ''),
                     operate_time=data.get('operate_time', ''),
                     user_operate=data.get('user_operate', ''),
-                    remark=data.get('remark', '')
+                    remark=data.get('remark', ''),
+                    alert_badge=data.get('alert_badge', ''),
+                    alert_message=data.get('alert_message', '')
                 )
                 announcement.save()
             
@@ -82,7 +93,9 @@ def get_announcement(request):
                     'operate_date': announcement.operate_date,
                     'operate_time': announcement.operate_time,
                     'user_operate': announcement.user_operate,
-                    'remark': announcement.remark
+                    'remark': announcement.remark,
+                    'alert_badge': announcement.alert_badge,
+                    'alert_message': announcement.alert_message
                 }
             })
         except Announcement.DoesNotExist:
@@ -161,11 +174,12 @@ def export_csv(request):
 def change_request_view(request):
     from .models import ChangeRequest, ChangeType, ChangeCategory, SystemAffected, BranchLocation, RiskLevel, ChangeRequestAttachment
     import json
+    import os
     from django.core.serializers.json import DjangoJSONEncoder
     from django.forms.models import model_to_dict
 
     next_request_no = ChangeRequest.get_next_request_no()
-    all_requests = ChangeRequest.objects.all().order_by('-id')
+    all_requests = ChangeRequest.objects.only('id', 'request_no', 'project_name').order_by('-id')
     
     request_no = request.GET.get('request_no')
     req_obj = None
@@ -174,7 +188,9 @@ def change_request_view(request):
     
     if request_no:
         try:
-            req_obj = ChangeRequest.objects.get(request_no=request_no)
+            req_obj = ChangeRequest.objects.select_related(
+                'change_type', 'change_category', 'system_affected', 'branch_location', 'risk_level'
+            ).prefetch_related('attachments').get(request_no=request_no)
             req_dict = model_to_dict(req_obj)
             # format dates for html input type="date"
             if req_obj.start_date: req_dict['start_date'] = req_obj.start_date.strftime('%Y-%m-%d')
@@ -185,12 +201,13 @@ def change_request_view(request):
             
             req_data_json = json.dumps(req_dict, cls=DjangoJSONEncoder)
             
-            attachments = ChangeRequestAttachment.objects.filter(change_request=req_obj)
-            for att in attachments:
-                req_files.append({
-                    'name': att.file.name.split('/')[-1],
-                    'url': att.file.url
-                })
+            for att in req_obj.attachments.all():
+                if att.file:
+                    req_files.append({
+                        'id': att.id,
+                        'name': os.path.basename(att.file.name),
+                        'url': att.file.url
+                    })
         except ChangeRequest.DoesNotExist:
             pass
     
@@ -296,7 +313,10 @@ def get_change_request(request):
         
     try:
         from .models import ChangeRequest
-        cr = ChangeRequest.objects.get(request_no=request_no)
+        import os
+        cr = ChangeRequest.objects.select_related(
+            'change_type', 'change_category', 'system_affected', 'branch_location', 'risk_level'
+        ).prefetch_related('attachments').get(request_no=request_no)
         data = {
             'change_type': cr.change_type_id if cr.change_type_id else '',
             'change_category': cr.change_category_id if cr.change_category_id else '',
@@ -304,48 +324,57 @@ def get_change_request(request):
             'branch_location': cr.branch_location_id if cr.branch_location_id else '',
             'risk_level': cr.risk_level_id if cr.risk_level_id else '',
             
-            'project_name': cr.project_name,
-            'project_owner': cr.project_owner,
-            'objectives': cr.objectives,
-            'contractor_company': cr.contractor_company,
-            'main_responsible_person': cr.main_responsible_person,
+            'project_name': cr.project_name or '',
+            'project_owner': cr.project_owner or '',
+            'objectives': cr.objectives or '',
+            'contractor_company': cr.contractor_company or '',
+            'main_responsible_person': cr.main_responsible_person or '',
             'start_date': cr.start_date.isoformat() if cr.start_date else '',
             'end_date': cr.end_date.isoformat() if cr.end_date else '',
-            'usage_purpose': cr.usage_purpose,
-            'usage_type': cr.usage_type,
-            'app_type': cr.app_type,
-            'infra_type': cr.infra_type,
-            'software_dev_test': cr.software_dev_test,
-            'database_change': cr.database_change,
-            'documents_provided': cr.documents_provided,
-            'other_documents': cr.other_documents,
-            'vm_count': cr.vm_count,
-            'require_public_ip': cr.require_public_ip,
-            'domain_name': cr.domain_name,
-            'cpu_vcore': cr.cpu_vcore,
-            'ram_gb': cr.ram_gb,
-            'storage_gb': cr.storage_gb,
-            'os': cr.os,
-            'os_version': cr.os_version,
-            'ports': cr.ports,
-            'has_authentication': cr.has_authentication,
-            'access_type': cr.access_type,
-            'require_https': cr.require_https,
-            'expected_traffic': cr.expected_traffic,
-            'dependencies': cr.dependencies,
-            'require_dr_ha': cr.require_dr_ha,
-            'additional_notes': cr.additional_notes,
-            'requester_name': cr.requester_name,
+            'usage_purpose': cr.usage_purpose or '',
+            'usage_type': cr.usage_type or '',
+            'app_type': cr.app_type or '',
+            'infra_type': cr.infra_type or '',
+            'software_dev_test': cr.software_dev_test or '',
+            'database_change': cr.database_change or '',
+            'documents_provided': cr.documents_provided or '',
+            'other_documents': cr.other_documents or '',
+            'vm_count': cr.vm_count if cr.vm_count is not None else '',
+            'require_public_ip': bool(cr.require_public_ip),
+            'domain_name': cr.domain_name or '',
+            'cpu_vcore': cr.cpu_vcore or '',
+            'ram_gb': cr.ram_gb or '',
+            'storage_gb': cr.storage_gb or '',
+            'os': cr.os or '',
+            'os_version': cr.os_version or '',
+            'ports': cr.ports or '',
+            'has_authentication': bool(cr.has_authentication),
+            'access_type': cr.access_type or '',
+            'require_https': bool(cr.require_https),
+            'expected_traffic': cr.expected_traffic or '',
+            'dependencies': cr.dependencies or '',
+            'require_dr_ha': bool(cr.require_dr_ha),
+            'additional_notes': cr.additional_notes or '',
+            'requester_name': cr.requester_name or '',
             'requester_date': cr.requester_date.isoformat() if cr.requester_date else '',
-            'evaluator_name': cr.evaluator_name,
+            'evaluator_name': cr.evaluator_name or '',
             'evaluator_date': cr.evaluator_date.isoformat() if cr.evaluator_date else '',
-            'approver_name': cr.approver_name,
+            'approver_name': cr.approver_name or '',
             'approver_date': cr.approver_date.isoformat() if cr.approver_date else '',
-            'attachments': [{'id': att.id, 'name': att.file.name.split('/')[-1], 'url': att.file.url} for att in cr.attachments.all()]
+            'attachments': [
+                {
+                    'id': att.id,
+                    'name': os.path.basename(att.file.name) if att.file else '',
+                    'url': att.file.url if att.file else ''
+                }
+                for att in cr.attachments.all() if att.file
+            ]
         }
         return JsonResponse({'status': 'success', 'data': data})
+    except ChangeRequest.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': f'ไม่พบข้อมูล Change Request: {request_no}'}, status=404)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=404)
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def change_request_report_view(request):
     from .models import ChangeRequest

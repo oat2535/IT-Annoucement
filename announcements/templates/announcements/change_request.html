@@ -11,29 +11,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2canvas for export to image -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- jQuery -->
+    <!-- jQuery & Select2 -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- Document Preview Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- LuckySheet Dependencies for Excel Preview -->
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/css/pluginsCss.css' />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/plugins.css' />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/css/luckysheet.css' />
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/assets/iconfont/iconfont.css' />
-    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luckyexcel/dist/luckyexcel.umd.js"></script>
-    
-    <!-- Select2 JS (Moved after Luckysheet to avoid jQuery overwrite) -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
@@ -61,29 +43,221 @@
             color: var(--text-dark);
         }
 
+        /* Modern Navbar / Toolbar */
         .toolbar {
             display: flex;
-            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
             margin-bottom: 25px;
-            background: white;
-            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 10px 18px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px -3px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
             width: 100%;
-            max-width: 1200px;
+            max-width: 1000px;
             position: sticky;
             top: 20px;
             z-index: 1000;
             overflow-x: auto;
             white-space: nowrap;
             -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
         }
         .toolbar::-webkit-scrollbar {
-            display: none;
+            height: 4px;
         }
-        .toolbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .toolbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .toolbar-left {
+            gap: 10px;
+        }
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background-color: #e2e8f0;
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+        .select-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .select-wrapper .select-icon {
+            position: absolute;
+            left: 12px;
+            color: #64748b;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .select-wrapper .select-chevron {
+            position: absolute;
+            right: 12px;
+            color: #94a3b8;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .custom-nav-select {
+            height: 40px;
+            padding: 0 34px 0 34px;
+            background-color: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            color: #1e293b;
+            font-family: 'Kanit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            max-width: 280px;
+            min-width: 220px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        .custom-nav-select:hover {
+            background-color: #ffffff;
+            border-color: #94a3b8;
+        }
+        .custom-nav-select:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Nav Action Buttons */
+        .nav-btn {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1;
+            text-decoration: none;
+            flex-shrink: 0;
+            border: none;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        .nav-btn i {
+            font-size: 14px;
+        }
+        .nav-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* Nav Button Variants */
+        .nav-btn-back {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            color: #334155;
+            padding: 0 14px;
+        }
+        .nav-btn-back:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+        }
+        .nav-btn-save:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-image {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+        }
+        .nav-btn-image:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-pdf {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+        }
+        .nav-btn-pdf:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-info {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            color: #475569;
+        }
+        .nav-btn-info:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #1e293b;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-btn-report {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+        }
+        .nav-btn-report:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
+            filter: brightness(1.05);
+        }
+
+        @media (max-width: 900px) {
+            .toolbar {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .custom-nav-select {
+                max-width: 190px;
+                min-width: 150px;
+                font-size: 13px;
+                padding: 0 28px 0 30px;
+            }
+            .nav-btn {
+                padding: 0 12px;
+                font-size: 13px;
+            }
         }
 
         .btn {
@@ -429,38 +603,51 @@
 <body>
 
     <div class="toolbar" id="toolbar">
-        <a href="{% url 'index' %}" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-left"></i>
-            <div>กลับหน้า<br>หลัก</div>
-        </a>
-        <select id="select-request-no" class="btn" style="border: 1px solid #cbd5e1; background: #f8fafc; margin-left: 15px; max-width: 300px;" onchange="loadRequest()">
-            <option value="" {% if not req_obj %}selected{% endif %}>-- สร้างใหม่ ({{ next_request_no }}) --</option>
-            {% for req in all_requests %}
-                <option value="{{ req.request_no }}" {% if req_obj and req_obj.request_no == req.request_no %}selected{% endif %}>{{ req.request_no }} - {{ req.project_name }}</option>
-            {% endfor %}
-        </select>
-        <button class="btn btn-success" id="save-btn" onclick="saveToDB()" style="margin-left: 15px;">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-            <div>Save to<br>DB</div>
-        </button>
-        <button class="btn btn-primary" onclick="exportToImage()">
-            <i class="fa-solid fa-image"></i>
-            <div>Save as<br>Image</div>
-        </button>
-        <button class="btn btn-danger" onclick="exportToPDF()">
-            <i class="fa-solid fa-file-pdf"></i>
-            <div>Save as<br>PDF</div>
-        </button>
+        <div class="toolbar-section toolbar-left">
+            <a href="{% url 'index' %}" class="nav-btn nav-btn-back" title="กลับไปยังหน้าหลักประกาศ">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>กลับหน้าหลัก</span>
+            </a>
+            <div class="toolbar-divider"></div>
+            <div class="select-wrapper">
+                <i class="fa-solid fa-folder-open select-icon"></i>
+                <select id="select-request-no" class="custom-nav-select" onchange="loadRequest()" title="เลือกรายการเอกสารเพื่อดูข้อมูล หรือสร้างใหม่">
+                    <option value="" {% if not req_obj %}selected{% endif %}>✨ สร้างใหม่ ({{ next_request_no }})</option>
+                    {% for req in all_requests %}
+                        <option value="{{ req.request_no }}" {% if req_obj and req_obj.request_no == req.request_no %}selected{% endif %}>
+                            {{ req.request_no }} - {{ req.project_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <i class="fa-solid fa-chevron-down select-chevron"></i>
+            </div>
+        </div>
 
-        <button class="btn btn-secondary" onclick="showReferenceInfo()" style="margin-left: 15px;">
-            <i class="fa-solid fa-circle-info"></i>
-            <div>Reference<br>Info</div>
-        </button>
+        <div class="toolbar-section toolbar-center">
+            <button class="nav-btn nav-btn-save" id="save-btn" onclick="saveToDB()" title="บันทึกข้อมูลลงฐานข้อมูล">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Save to DB</span>
+            </button>
+            <button class="nav-btn nav-btn-image" onclick="exportToImage()" title="บันทึกเอกสารเป็นรูปภาพ PNG">
+                <i class="fa-solid fa-image"></i>
+                <span>Save Image</span>
+            </button>
+            <button class="nav-btn nav-btn-pdf" onclick="exportToPDF()" title="ส่งออกหรือพิมพ์เอกสารเป็น PDF">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>Save PDF</span>
+            </button>
+            <button class="nav-btn nav-btn-info" onclick="showReferenceInfo()" title="ดูข้อมูลและคู่มืออ้างอิง">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Reference</span>
+            </button>
+        </div>
 
-        <a href="{% url 'change_request_report' %}" class="btn btn-info" style="margin-left: auto; text-decoration: none;">
-            <i class="fa-solid fa-table-list"></i>
-            <div>View<br>Report</div>
-        </a>
+        <div class="toolbar-section toolbar-right">
+            <a href="{% url 'change_request_report' %}" class="nav-btn nav-btn-report" title="ดูหน้ารายงาน Change Request">
+                <i class="fa-solid fa-table-list"></i>
+                <span>View Report</span>
+            </a>
+        </div>
     </div>
 
     <div class="form-container" id="export-area">
@@ -863,187 +1050,13 @@
         let selectedFiles = [];
 
         function loadRequest() {
-            const requestNo = document.getElementById('select-request-no').value;
-            if (!requestNo) {
-                // Clear form to create new
-                document.getElementById('cr-form').reset();
-                selectedFiles = [];
-                updateFilePreview();
-                if (window.jQuery) { 
-                    $('#system_affected').val('').trigger('change');
-                    $('#branch_location').val('').trigger('change');
-                }
-                document.getElementById('display-request-no').innerText = '-- สร้างใหม่ ({{ next_request_no }}) --';
-                isSavedToDB = false;
-                currentRequestNo = '{{ next_request_no }}';
-                
-                // Enable all form inputs
-                const formElements = document.getElementById('cr-form').elements;
-                for (let i = 0; i < formElements.length; i++) {
-                    formElements[i].disabled = false;
-                }
-                // Show save button
-                document.getElementById('save-btn').style.display = 'flex';
-                
-                return;
+            const select = document.getElementById('select-request-no');
+            const requestNo = select ? select.value : '';
+            if (requestNo) {
+                window.location.href = "{% url 'change_request' %}?request_no=" + encodeURIComponent(requestNo);
+            } else {
+                window.location.href = "{% url 'change_request' %}";
             }
-
-            fetch(`/api/get_change_request/?request_no=${requestNo}`)
-                .then(response => response.json())
-                .then(res => {
-                    if (res.status === 'success') {
-                        const data = res.data;
-                        document.getElementById('cr-form').reset();
-                        selectedFiles = [];
-                        updateFilePreview();
-                        if (window.jQuery) { 
-                            $('#system_affected').val('').trigger('change');
-                            $('#branch_location').val('').trigger('change');
-                        }
-                        
-                        // Populate simple inputs (text, select)
-                        const textInputs = ['change_type', 'change_category', 'system_affected', 'branch_location', 'risk_level',
-                            'project_name', 'project_owner', 'objectives', 'contractor_company', 
-                            'main_responsible_person', 'start_date', 'end_date', 'usage_purpose', 
-                            'vm_count', 'domain_name', 'cpu_vcore', 'ram_gb', 'storage_gb', 'os', 'os_version', 
-                            'ports', 'access_type', 'expected_traffic', 'dependencies', 'additional_notes',
-                            'requester_name', 'requester_date', 'evaluator_name', 'evaluator_date', 'approver_name', 'approver_date'];
-                        
-                        textInputs.forEach(field => {
-                            const el = document.getElementsByName(field)[0];
-                            if(el && data[field]) {
-                                el.value = data[field];
-                                if ((field === 'system_affected' || field === 'branch_location') && window.jQuery) {
-                                    $(el).trigger('change');
-                                }
-                            }
-                        });
-
-                        // Checkboxes (Boolean)
-                        const boolInputs = ['require_public_ip', 'has_authentication', 'require_https', 'require_dr_ha'];
-                        boolInputs.forEach(field => {
-                            const el = document.getElementsByName(field)[0];
-                            if(el) el.checked = data[field] === true;
-                        });
-
-                        // Checkboxes (Comma separated string)
-                        const checkboxGroups = ['usage_type', 'app_type', 'infra_type', 'database_change', 'documents_provided', 'other_documents'];
-                        checkboxGroups.forEach(group => {
-                            if(data[group]) {
-                                const values = data[group].split(',').map(s => s.trim());
-                                const checkboxes = document.querySelectorAll(`input[name="${group}"]`);
-                                checkboxes.forEach(cb => {
-                                    if(values.includes(cb.value)) cb.checked = true;
-                                });
-                                // Handle other_documents which is a text input but treated similarly in some logic, wait, it's just a text input
-                                if(group === 'other_documents') {
-                                     const el = document.getElementsByName(group)[0];
-                                     if(el) el.value = data[group];
-                                }
-                            }
-                        });
-
-                        // Display existing attachments
-                        const previewContainer = document.getElementById('file-preview-container');
-                        if (data.attachments && data.attachments.length > 0) {
-                            data.attachments.forEach(att => {
-                                const item = document.createElement('div');
-                                item.style.border = '1px solid #cbd5e1';
-                                item.style.padding = '5px 10px';
-                                item.style.borderRadius = '6px';
-                                item.style.backgroundColor = '#f8fafc';
-                                item.style.fontSize = '14px';
-                                item.style.display = 'flex';
-                                item.style.alignItems = 'center';
-                                item.style.justifyContent = 'space-between';
-                                item.style.gap = '5px';
-                                item.style.width = '100%';
-
-                                const leftDiv = document.createElement('div');
-                                leftDiv.style.display = 'flex';
-                                leftDiv.style.alignItems = 'center';
-                                leftDiv.style.gap = '5px';
-                                
-                                let icon = 'fa-file';
-                                const nameLower = att.name.toLowerCase();
-                                if (nameLower.endsWith('.pdf')) icon = 'fa-file-pdf';
-                                else if (nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/)) icon = 'fa-file-image';
-                                else if (nameLower.match(/\.(doc|docx)$/)) icon = 'fa-file-word';
-                                else if (nameLower.match(/\.(xls|xlsx)$/)) icon = 'fa-file-excel';
-
-                                leftDiv.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${att.name}</span>`;
-                                
-                                const rightDiv = document.createElement('div');
-                                rightDiv.style.display = 'flex';
-                                rightDiv.style.gap = '8px';
-                                const previewBtn = document.createElement('a');
-                                
-                                const isWord = nameLower.match(/\.(doc|docx)$/);
-                                const isExcel = nameLower.match(/\.(xls|xlsx)$/);
-                                const isPdf = nameLower.match(/\.pdf$/);
-                                const isImage = nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/);
-                                
-                                if (isWord || isExcel || isPdf || isImage) {
-                                    previewBtn.href = 'javascript:void(0)';
-                                    previewBtn.onclick = function(e) { 
-                                        e.preventDefault();
-                                        previewDocument(att.url, isWord ? 'word' : (isExcel ? 'excel' : (isPdf ? 'pdf' : 'image')), att.name, att.id); 
-                                    };
-                                } else {
-                                    previewBtn.href = att.url;
-                                    previewBtn.target = '_blank';
-                                }
-                                
-                                previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> พรีวิว';
-                                previewBtn.className = 'btn btn-info';
-                                previewBtn.style.padding = '4px 8px';
-                                previewBtn.style.fontSize = '12px';
-                                previewBtn.style.minHeight = 'auto';
-                                previewBtn.style.textDecoration = 'none';
-                                
-                                rightDiv.appendChild(previewBtn);
-
-                                const downloadBtn = document.createElement('a');
-                                downloadBtn.href = att.url;
-                                downloadBtn.download = att.name;
-                                downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> ดาวน์โหลด';
-                                downloadBtn.className = 'btn btn-success';
-                                downloadBtn.style.padding = '4px 8px';
-                                downloadBtn.style.fontSize = '12px';
-                                downloadBtn.style.minHeight = 'auto';
-                                downloadBtn.style.textDecoration = 'none';
-                                rightDiv.appendChild(downloadBtn);
-
-                                item.appendChild(leftDiv);
-                                item.appendChild(rightDiv);
-                                previewContainer.appendChild(item);
-                            });
-                        }
-
-                        document.getElementById('display-request-no').innerText = requestNo;
-                        isSavedToDB = true;
-                        currentRequestNo = requestNo;
-                        
-                        // Disable all form inputs
-                        const formElements = document.getElementById('cr-form').elements;
-                        for (let i = 0; i < formElements.length; i++) {
-                            formElements[i].disabled = true;
-                        }
-                        // Hide save button
-                        document.getElementById('save-btn').style.display = 'none';
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'โหลดข้อมูลสำเร็จ',
-                            text: `โหลดข้อมูล ${requestNo} เรียบร้อยแล้ว`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        
-                    } else {
-                        Swal.fire('Error', res.message, 'error');
-                    }
-                });
         }
 
         function previewDocument(url, type, filename, fileId = null) {
@@ -1455,8 +1468,15 @@
                     // Hide save button
                     document.getElementById('save-btn').style.display = 'none';
 
-                    Swal.fire('สำเร็จ', data.message, 'success').then(() => {
-                        window.location.href = "{% url 'change_request' %}?request_no=" + data.request_no;
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกสำเร็จ',
+                        text: `บันทึกข้อมูลเรียบร้อยแล้ว: ${data.request_no}\nระบบกำลังนำคุณไปยังหน้าเอกสารที่รอสร้างใหม่`,
+                        timer: 2000,
+                        showConfirmButton: true,
+                        confirmButtonText: 'ตกลง'
+                    }).then(() => {
+                        window.location.href = "{% url 'change_request' %}";
                     });
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
@@ -1741,6 +1761,11 @@
         document.addEventListener("DOMContentLoaded", function() {
             const hasReqObj = "{{ req_obj|yesno:'true,false' }}" === "true";
             if (hasReqObj) {
+                isSavedToDB = true;
+                currentRequestNo = "{{ req_obj.request_no }}";
+                const displayEl = document.getElementById('display-request-no');
+                if (displayEl) displayEl.innerText = currentRequestNo;
+                
                 const reqData = JSON.parse('{{ req_data_json|escapejs }}');
                 const reqFiles = JSON.parse('{{ req_files_json|escapejs }}');
                 
@@ -1784,6 +1809,10 @@
                 for (let i = 0; i < formElements.length; i++) {
                     formElements[i].disabled = true;
                 }
+                if (window.jQuery) {
+                    $('#system_affected').prop('disabled', true);
+                    $('#branch_location').prop('disabled', true);
+                }
                 
                 // Hide Save button
                 const saveBtn = document.getElementById('save-btn');
@@ -1808,17 +1837,50 @@
                         item.style.width = '100%';
 
                         const leftDiv = document.createElement('div');
-                        leftDiv.innerHTML = `<i class="fa-solid fa-file"></i> <span>${file.name}</span>`;
+                        let icon = 'fa-file';
+                        const nameLower = (file.name || '').toLowerCase();
+                        if (nameLower.endsWith('.pdf')) icon = 'fa-file-pdf';
+                        else if (nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/)) icon = 'fa-file-image';
+                        else if (nameLower.match(/\.(doc|docx)$/)) icon = 'fa-file-word';
+                        else if (nameLower.match(/\.(xls|xlsx)$/)) icon = 'fa-file-excel';
+
+                        leftDiv.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${file.name}</span>`;
                         
                         const rightDiv = document.createElement('div');
-                        rightDiv.innerHTML = `
-                            <a href="${file.url}" target="_blank" class="btn btn-info" style="padding: 2px 8px; font-size: 12px; min-height: auto; text-decoration: none;">
-                                <i class="fa-solid fa-eye"></i> ดูไฟล์
-                            </a>
-                            <a href="${file.url}" download="${file.name}" class="btn btn-success" style="padding: 2px 8px; font-size: 12px; min-height: auto; text-decoration: none;">
-                                <i class="fa-solid fa-download"></i> โหลด
-                            </a>
-                        `;
+                        rightDiv.style.display = 'flex';
+                        rightDiv.style.gap = '8px';
+
+                        const isWord = nameLower.match(/\.(doc|docx)$/);
+                        const isExcel = nameLower.match(/\.(xls|xlsx)$/);
+                        const isPdf = nameLower.match(/\.pdf$/);
+                        const isImage = nameLower.match(/\.(jpeg|jpg|gif|png|webp)$/);
+                        
+                        if (isWord || isExcel || isPdf || isImage) {
+                            const previewBtn = document.createElement('a');
+                            previewBtn.href = 'javascript:void(0)';
+                            previewBtn.className = 'btn btn-info';
+                            previewBtn.style.padding = '2px 8px';
+                            previewBtn.style.fontSize = '12px';
+                            previewBtn.style.minHeight = 'auto';
+                            previewBtn.style.textDecoration = 'none';
+                            previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> พรีวิว';
+                            previewBtn.onclick = function(e) {
+                                e.preventDefault();
+                                previewDocument(file.url, isWord ? 'word' : (isExcel ? 'excel' : (isPdf ? 'pdf' : 'image')), file.name, file.id);
+                            };
+                            rightDiv.appendChild(previewBtn);
+                        }
+
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.href = file.url;
+                        downloadBtn.download = file.name;
+                        downloadBtn.className = 'btn btn-success';
+                        downloadBtn.style.padding = '2px 8px';
+                        downloadBtn.style.fontSize = '12px';
+                        downloadBtn.style.minHeight = 'auto';
+                        downloadBtn.style.textDecoration = 'none';
+                        downloadBtn.innerHTML = '<i class="fa-solid fa-download"></i> โหลด';
+                        rightDiv.appendChild(downloadBtn);
                         
                         item.appendChild(leftDiv);
                         item.appendChild(rightDiv);
@@ -1828,5 +1890,24 @@
             }
         });
     </script>
+
+    <!-- Export Libraries (Deferred) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+
+    <!-- Document Preview Libraries (Deferred) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+    
+    <!-- LuckySheet Dependencies for Excel Preview (Deferred) -->
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/css/pluginsCss.css' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/plugins.css' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/css/luckysheet.css' />
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet/dist/assets/iconfont/iconfont.css' />
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/luckyexcel/dist/luckyexcel.umd.js" defer></script>
+
 </body>
 </html>

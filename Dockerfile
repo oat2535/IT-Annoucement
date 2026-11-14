@@ -31,4 +31,5 @@ EXPOSE 5889
 
 # คำสั่งเริ่มต้นเมื่อ Container ทำงาน (รัน Server ผ่าน Gunicorn สำหรับ Production)
 # เพิ่ม --workers 3 และ --threads 2 เพื่อรองรับ Request พร้อมกันหลายๆ ตัว ป้องกันปัญหาหน้าเว็บโหลดช้า
-CMD ["gunicorn", "it_announcement_project.wsgi:application", "--bind", "0.0.0.0:5889", "--workers", "3", "--threads", "2"]
+# เพิ่ม --forwarded-allow-ips "*" เพื่อให้รองรับ Header X-Forwarded-Proto จาก Reverse Proxy สำหรับ HTTPS
+CMD ["gunicorn", "it_announcement_project.wsgi:application", "--bind", "0.0.0.0:5889", "--workers", "3", "--threads", "2", "--forwarded-allow-ips", "*"]

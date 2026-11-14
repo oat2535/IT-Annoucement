@@ -21,13 +21,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9+jdk(%uodqv4yk!2do+a#41&k49=agn8bte4c8d=^is$&-83%'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-9+jdk(%uodqv4yk!2do+a#41&k49=agn8bte4c8d=^is$&-83%')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Read DEBUG from environment variable (Docker sets this to '1' in development)
-DEBUG = os.environ.get('DEBUG', 'False') == '1'
+DEBUG = os.environ.get('DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = ['*']
+raw_hosts = os.environ.get('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(',')] if ',' in raw_hosts else [raw_hosts]
 
 
 # Application definition
@@ -81,6 +82,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 20,
+            'init_command': 'PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;',
+        }
     }
 }
 
@@ -122,12 +127,52 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+WHITENOISE_MAX_AGE = 31536000  # 1 year caching for static assets
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ป้องกัน Error: Cross-Origin-Opener-Policy header has been ignored เมื่อรันบน HTTP
+# Security, HTTPS & Reverse Proxy Settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+raw_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if raw_csrf:
+    CSRF_TRUSTED_ORIGINS = [orig.strip() for orig in raw_csrf.split(',') if orig.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+    for host in ALLOWED_HOSTS:
+        if host and host != '*':
+            CSRF_TRUSTED_ORIGINS.extend([f"https://{host}", f"http://{host}"])
+
+USE_HTTPS = os.environ.get('USE_HTTPS', '0') == '1' or not DEBUG
+
+if USE_HTTPS:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', '0') == '1'
+    hsts_seconds = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
+    if hsts_seconds > 0:
+        SECURE_HSTS_SECONDS = hsts_seconds
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+else:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
+
+# ป้องกัน Error: Cross-Origin-Opener-Policy header has been ignored เมื่อรันบน HTTP/Reverse Proxy
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
 import os

@@ -23,6 +23,8 @@ class Announcement(models.Model):
     operate_time = models.CharField(max_length=50)
     user_operate = models.CharField(max_length=200)
     remark = models.TextField(blank=True, null=True)
+    alert_badge = models.CharField(max_length=100, blank=True, null=True)
+    alert_message = models.TextField(blank=True, null=True)
 
     @classmethod
     def get_next_change_no(cls):

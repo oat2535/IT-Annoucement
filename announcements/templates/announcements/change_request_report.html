@@ -341,9 +341,14 @@
             <div class="page-title">
                 <i class="fa-solid fa-file-contract"></i> รายงาน Change Request
             </div>
-            <a href="{% url 'change_request' %}" class="btn-back">
-                <i class="fa-solid fa-arrow-left"></i> กลับหน้า Change Request
-            </a>
+            <div style="display: flex; gap: 8px;">
+                <a href="{% url 'portal' %}" class="btn-back">
+                    <i class="fa-solid fa-house"></i> หน้าหลัก Portal
+                </a>
+                <a href="{% url 'change_request' %}" class="btn-back" style="background: #10b981; color: white; border-color: #10b981;">
+                    <i class="fa-solid fa-file-pen"></i> ฟอร์ม Change Request
+                </a>
+            </div>
         </div>
 
         <div class="filter-card">

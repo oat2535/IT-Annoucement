@@ -15,10 +15,24 @@ class FormatOperateDateDefaultsTests(TestCase):
         self.assertEqual(english_text, 'Monday, 18 May 2026')
 
 
-class IndexViewOperateDateTests(TestCase):
-    def test_operate_date_defaults_to_today(self):
+class PortalAndAnnouncementViewTests(TestCase):
+    def test_portal_home_displays_service_options(self):
         response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'IT Service & Operations Portal')
+        self.assertContains(response, 'IT Announcement')
+        self.assertContains(response, 'Request Form')
+        self.assertContains(response, reverse('announcement'))
+        self.assertContains(response, reverse('change_request'))
+        self.assertContains(response, '/static/logo.png')
 
+    def test_portal_home_redirects_change_no_query_param(self):
+        response = self.client.get('/?change_no=CHG-2026-0001')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/announcement/?change_no=CHG-2026-0001')
+
+    def test_announcement_view_operate_date_defaults_to_today(self):
+        response = self.client.get('/announcement/')
         expected_th, expected_en = format_operate_date_defaults(timezone.localdate())
 
         self.assertEqual(response.status_code, 200)
@@ -55,6 +69,7 @@ class ChangeRequestViewTests(TestCase):
         self.assertIsNotNone(response.context['req_obj'])
         self.assertEqual(response.context['req_obj'].project_name, 'Test Project Alpha')
         self.assertContains(response, 'Test Project Alpha')
+        self.assertContains(response, 'โหลดข้อมูลเอกสารเรียบร้อยแล้ว')
 
     def test_save_change_request_api(self):
         post_data = {
@@ -70,6 +85,7 @@ class ChangeRequestViewTests(TestCase):
         data = response.json()
         self.assertEqual(data['status'], 'success')
         self.assertTrue(data['request_no'].startswith('CHG-'))
+        self.assertEqual(data['project_name'], 'New Beta Service')
         created = ChangeRequest.objects.filter(request_no=data['request_no']).first()
         self.assertIsNotNone(created)
         self.assertEqual(created.project_name, 'New Beta Service')
@@ -88,6 +104,54 @@ class ChangeRequestViewTests(TestCase):
         self.assertEqual(response.status_code, 404)
         data = response.json()
         self.assertEqual(data['status'], 'error')
+
+    def test_export_change_request_csv_all_columns(self):
+        self.cr.require_public_ip = True
+        self.cr.vm_count = 2
+        self.cr.save()
+
+        response = self.client.get(reverse('export_change_request_csv'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('text/csv'))
+        content = response.content.decode('utf-8-sig')
+        lines = content.strip().split('\r\n')
+        self.assertGreaterEqual(len(lines), 2)
+        
+        # Verify all 46 columns in header
+        headers = lines[0].split(',')
+        self.assertEqual(len(headers), 46)
+        self.assertIn('เลขที่เอกสาร (Request No.)', lines[0])
+        self.assertIn('ประเภทการเปลี่ยนแปลง (Change Type)', lines[0])
+        self.assertIn('ต้องการ Public IP (Require Public IP)', lines[0])
+
+        # Verify converted Thai values in row
+        data_row = lines[1]
+        self.assertIn('CHG-2026-9999', data_row)
+        self.assertIn('Standard Change', data_row)
+        self.assertIn('ต้องการ Public IP', data_row)
+        self.assertIn('2 เครื่อง', data_row)
+
+    def test_export_csv_prevents_formula_injection_and_name_error(self):
+        # Specifically test that a dash '-' does not become '- vCore' (#NAME? in Excel)
+        cr_with_dash = ChangeRequest.objects.create(
+            request_no='CHG-2026-DASH',
+            project_name='Test Dash Specs',
+            change_type=self.change_type,
+            cpu_vcore='-',
+            ram_gb='-',
+            storage_gb='-',
+            domain_name='=cmd|/C calc!A0'
+        )
+        response = self.client.get(reverse('export_change_request_csv'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8-sig')
+
+        # Ensure '- vCore' does NOT exist (which causes #NAME? in Excel)
+        self.assertNotIn('- vCore', content)
+        self.assertNotIn('- GB', content)
+
+        # Ensure formula injection is neutralized with single quote
+        self.assertIn("'=cmd|/C calc!A0", content)
 
 
 class SecurityAndHttpsSettingsTests(TestCase):

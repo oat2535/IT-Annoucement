@@ -341,9 +341,14 @@
             <div class="page-title">
                 <i class="fa-solid fa-chart-line"></i> รายงานประกาศ IT
             </div>
-            <a href="{% url 'index' %}" class="btn-back">
-                <i class="fa-solid fa-arrow-left"></i> กลับหน้าแรก
-            </a>
+            <div style="display: flex; gap: 8px;">
+                <a href="{% url 'portal' %}" class="btn-back">
+                    <i class="fa-solid fa-house"></i> หน้าหลัก Portal
+                </a>
+                <a href="{% url 'announcement' %}" class="btn-back" style="background: #0284c7; color: white; border-color: #0284c7;">
+                    <i class="fa-solid fa-bullhorn"></i> ระบบประกาศ IT
+                </a>
+            </div>
         </div>
 
         <div class="filter-card">

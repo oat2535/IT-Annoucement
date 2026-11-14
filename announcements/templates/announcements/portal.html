@@ -1,0 +1,525 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Service Portal - โรงพยาบาลสัตว์ทองหล่อ</title>
+    <!-- Google Fonts: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --success: #10b981;
+            --success-dark: #059669;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.08) 0%, rgba(248, 250, 252, 1) 50%, rgba(16, 185, 129, 0.05) 100%), #f8fafc;
+            color: var(--slate-800);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 16px;
+        }
+
+        .portal-container {
+            max-width: 1140px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Top Brand Header */
+        .portal-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 10px;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--slate-600);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            margin-bottom: 18px;
+        }
+
+        .brand-badge i {
+            color: var(--primary);
+        }
+
+        .brand-logo {
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));
+        }
+
+        .portal-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--slate-900);
+            letter-spacing: -0.5px;
+            line-height: 1.25;
+            margin-bottom: 8px;
+        }
+
+        .portal-subtitle {
+            font-size: 16px;
+            color: var(--slate-600);
+            font-weight: 400;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        /* Service Cards Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+            margin-bottom: 40px;
+        }
+
+        /* Interactive Service Card */
+        .service-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1.5px solid var(--slate-200);
+            padding: 36px 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--card-color-1), var(--card-color-2));
+            transition: height 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.12), 0 10px 15px -5px rgba(15, 23, 42, 0.04);
+            border-color: var(--card-color-1);
+        }
+
+        .service-card:hover::before {
+            height: 8px;
+        }
+
+        /* Card Theme Colors */
+        .card-announcement {
+            --card-color-1: #0284c7;
+            --card-color-2: #2563eb;
+            --card-bg-subtle: #f0f9ff;
+            --card-badge-color: #0369a1;
+        }
+
+        .card-request {
+            --card-color-1: #10b981;
+            --card-color-2: #059669;
+            --card-bg-subtle: #f0fdf4;
+            --card-badge-color: #15803d;
+        }
+
+        /* Card Top Details */
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .card-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 32px;
+            box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.35);
+            transition: transform 0.3s ease;
+        }
+
+        .card-request .card-icon-wrap {
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.35);
+        }
+
+        .service-card:hover .card-icon-wrap {
+            transform: scale(1.08) rotate(-3deg);
+        }
+
+        .card-badge {
+            padding: 4px 12px;
+            background: var(--card-bg-subtle);
+            color: var(--card-badge-color);
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-desc {
+            font-size: 15px;
+            color: var(--slate-600);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            min-height: 48px;
+        }
+
+        /* Features List */
+        .features-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px dashed var(--slate-200);
+        }
+
+        .features-list li {
+            font-size: 14px;
+            color: var(--slate-700);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .features-list li i {
+            color: var(--card-color-1);
+            font-size: 14px;
+        }
+
+        /* Buttons & Actions */
+        .card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-enter {
+            width: 100%;
+            padding: 13px 20px;
+            background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Kanit', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-enter:hover {
+            filter: brightness(1.08);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+        }
+
+        .btn-enter i {
+            transition: transform 0.2s ease;
+        }
+
+        .btn-enter:hover i {
+            transform: translateX(4px);
+        }
+
+        .quick-links-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 4px;
+            font-size: 13px;
+        }
+
+        .quick-link {
+            color: var(--slate-600);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s ease;
+        }
+
+        .quick-link:hover {
+            color: var(--card-color-1);
+            text-decoration: underline;
+        }
+
+        /* Bottom Stats Bar */
+        .portal-stats-bar {
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid var(--slate-200);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--slate-100);
+            color: var(--slate-700);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--slate-900);
+        }
+
+        /* Footer */
+        .portal-footer {
+            text-align: center;
+            font-size: 13px;
+            color: var(--slate-600);
+            padding: 10px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+            .services-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .portal-title {
+                font-size: 26px;
+            }
+            .service-card {
+                padding: 28px 24px;
+            }
+            .portal-stats-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="portal-container">
+        <!-- Top Header & Brand -->
+        <header class="portal-header">
+            <div class="brand-badge">
+                <i class="fa-solid fa-hospital"></i>
+                <span>ฝ่ายเทคโนโลยีสารสนเทศ (IT Department)</span>
+            </div>
+            <div>
+                <img src="{% static 'logo.png' %}" alt="Thonglor Pet Hospital Logo" class="brand-logo" onerror="this.style.display='none'">
+            </div>
+            <h1 class="portal-title">IT Service & Operations Portal</h1>
+            <p class="portal-subtitle">กรุณาเลือกบริการที่ต้องการเข้าใช้งาน ระบบออกแบบเพื่อความสะดวก รวดเร็ว และเป็นระเบียบมาตรฐานโรงพยาบาลสัตว์ทองหล่อ</p>
+        </header>
+
+        <!-- Service Choice Cards -->
+        <main class="services-grid">
+            <!-- 1. IT Announcement Card -->
+            <div class="service-card card-announcement">
+                <div>
+                    <div class="card-top">
+                        <div class="card-icon-wrap">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <span class="card-badge">ประกาศ & ปิด/เปิดระบบ</span>
+                    </div>
+
+                    <h2 class="card-title">
+                        <span>IT Announcement</span>
+                    </h2>
+                    <p class="card-desc">
+                        ระบบสร้างและจัดการแผ่นป้ายประกาศแจ้งเตือนปิดปรับปรุงระบบ ปิดระบบชั่วคราว หรือเปิดให้บริการระบบสารสนเทศ
+                    </p>
+
+                    <ul class="features-list">
+                        <li><i class="fa-solid fa-circle-check"></i> สร้างแผ่นป้ายแจ้งเตือนมาตรฐานโรงพยาบาล</li>
+                        <li><i class="fa-solid fa-circle-check"></i> สลับโหมดแจ้งเปิดระบบ / ปิดระบบ (3D Flip Animation)</li>
+                        <li><i class="fa-solid fa-circle-check"></i> ส่งออกรูปภาพ PNG และพิมพ์เอกสาร PDF คุณภาพสูง</li>
+                        <li><i class="fa-solid fa-circle-check"></i> ค้นหาและตรวจสอบรายงานประวัติประกาศย้อนหลัง</li>
+                    </ul>
+                </div>
+
+                <div class="card-actions">
+                    <a href="{% url 'announcement' %}" class="btn-enter" title="เข้าสู่ระบบ IT Announcement">
+                        <span>เข้าสู่ระบบ IT Announcement</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <div class="quick-links-row">
+                        <a href="{% url 'announcement' %}" class="quick-link">
+                            <i class="fa-solid fa-plus-circle"></i> สร้างประกาศใหม่
+                        </a>
+                        <a href="{% url 'report' %}" class="quick-link">
+                            <i class="fa-solid fa-chart-line"></i> ดูรายงานประวัติประกาศ
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Request Form (Change Request) Card -->
+            <div class="service-card card-request">
+                <div>
+                    <div class="card-top">
+                        <div class="card-icon-wrap">
+                            <i class="fa-solid fa-file-signature"></i>
+                        </div>
+                        <span class="card-badge">แบบฟอร์ม FM-IT-029</span>
+                    </div>
+
+                    <h2 class="card-title">
+                        <span>Request Form</span>
+                    </h2>
+                    <p class="card-desc">
+                        แบบคำขออนุญาตแก้ไข เปลี่ยนแปลง และติดตั้งระบบ (Change Request) สำหรับประเมินความเสี่ยง ผลกระทบ และขออนุมัติ
+                    </p>
+
+                    <ul class="features-list">
+                        <li><i class="fa-solid fa-circle-check"></i> บันทึกแบบฟอร์มขอแก้ไขเปลี่ยนแปลงและติดตั้งระบบ</li>
+                        <li><i class="fa-solid fa-circle-check"></i> แนบไฟล์พร้อมพรีวิวเอกสาร Word, Excel, PDF และรูปภาพ</li>
+                        <li><i class="fa-solid fa-circle-check"></i> พิมพ์เอกสารฟอร์มทางการ และเซ็นอนุมัติในระบบ</li>
+                        <li><i class="fa-solid fa-circle-check"></i> หน้ารายงานสรุปคำขอและ Export ข้อมูลครบทุกคอลัมน์ (CSV)</li>
+                    </ul>
+                </div>
+
+                <div class="card-actions">
+                    <a href="{% url 'change_request' %}" class="btn-enter" title="เข้าสู่ระบบ Request Form">
+                        <span>เข้าสู่ระบบ Request Form</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <div class="quick-links-row">
+                        <a href="{% url 'change_request' %}" class="quick-link">
+                            <i class="fa-solid fa-file-pen"></i> กรอกแบบคำขอใหม่
+                        </a>
+                        <a href="{% url 'change_request_report' %}" class="quick-link">
+                            <i class="fa-solid fa-table-list"></i> ดูรายงาน Change Request
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Stats & Info Bar -->
+        <section class="portal-stats-bar">
+            <div class="stat-item">
+                <div class="stat-icon" style="color: var(--primary); background: #e0f2fe;">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
+                <div>
+                    <div class="stat-label">ประกาศในระบบทั้งหมด</div>
+                    <div class="stat-value">{{ total_announcements|default:"0" }} รายการ</div>
+                </div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-icon" style="color: var(--success); background: #dcfce7;">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <div>
+                    <div class="stat-label">คำขอ Change Request</div>
+                    <div class="stat-value">{{ total_change_requests|default:"0" }} รายการ</div>
+                </div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-icon" style="color: #6366f1; background: #e0e7ff;">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <div class="stat-label">ความปลอดภัยระบบ</div>
+                    <div class="stat-value">SSL / HTTPS Encrypted</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Portal Footer -->
+    <footer class="portal-footer">
+        <div>&copy; 2026 Thonglor Pet Hospital. All Rights Reserved. | ฝ่ายเทคโนโลยีสารสนเทศ (IT Department)</div>
+    </footer>
+
+</body>
+</html>

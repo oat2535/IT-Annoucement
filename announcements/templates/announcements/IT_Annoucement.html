@@ -726,6 +726,10 @@
 
     <!-- Action Toolbar (Hidden during export) -->
     <div class="toolbar" id="toolbar">
+        <a href="{% url 'portal' %}" class="btn" style="background-color: #475569; color: white; text-decoration: none;" title="กลับไปยังหน้าหลัก IT Portal">
+            <i class="fa-solid fa-house"></i>
+            <div>หน้าหลัก<br>Portal</div>
+        </a>
         <div style="font-weight: 600; margin-right: 15px; display: flex; align-items: center; color: #475569;">
             <i class="fa-solid fa-pen-to-square" style="margin-right: 8px; font-size: 1.2em;"></i>
             <div style="line-height: 1.2; font-size: 14px;">คลิกที่ข้อความเพื่อ<br>แก้ไข</div>
@@ -1045,7 +1049,7 @@
         async function loadAnnouncement() {
             const changeNo = document.getElementById('select-change-no').value;
             if (!changeNo) {
-                window.location.href = "{% url 'index' %}";
+                window.location.href = "{% url 'announcement' %}";
                 return;
             }
             try {
@@ -1054,7 +1058,7 @@
                 
                 if (result.status === 'success') {
                     if (window.history && window.history.replaceState) {
-                        window.history.replaceState(null, '', "{% url 'index' %}?change_no=" + encodeURIComponent(changeNo));
+                        window.history.replaceState(null, '', "{% url 'announcement' %}?change_no=" + encodeURIComponent(changeNo));
                     }
                     const data = result.data;
                     document.querySelector('.change-no-badge').innerHTML = `Change No. : ${data.change_no}`;
@@ -1388,7 +1392,7 @@
                         timer: 2000,
                         showConfirmButton: false
                     }).then(() => {
-                        window.location.href = "{% url 'index' %}?change_no=" + result.change_no;
+                        window.location.href = "{% url 'announcement' %}?change_no=" + result.change_no;
                     });
                 } else {
                     Swal.fire({

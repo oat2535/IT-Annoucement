@@ -6,7 +6,27 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Announcement
 from .utils import format_operate_date_defaults
 
-def index(request):
+def portal_view(request):
+    # Support backward compatibility when someone passes change_no to root
+    change_no = request.GET.get('change_no')
+    if change_no:
+        from django.shortcuts import redirect
+        return redirect(f"/announcement/?change_no={change_no}")
+
+    from .models import Announcement, ChangeRequest
+    total_announcements = Announcement.objects.count()
+    total_change_requests = ChangeRequest.objects.count()
+    latest_announcement = Announcement.objects.order_by('-id').first()
+    latest_change_request = ChangeRequest.objects.order_by('-id').first()
+
+    return render(request, 'announcements/portal.html', {
+        'total_announcements': total_announcements,
+        'total_change_requests': total_change_requests,
+        'latest_announcement': latest_announcement,
+        'latest_change_request': latest_change_request,
+    })
+
+def announcement_view(request):
     next_change_no = Announcement.get_next_change_no()
     all_announcements = Announcement.objects.only('id', 'change_no', 'subject').order_by('-id')
     default_operate_date_th, default_operate_date_en = format_operate_date_defaults(timezone.localdate())
@@ -16,6 +36,9 @@ def index(request):
         'default_operate_date_th': default_operate_date_th,
         'default_operate_date_en': default_operate_date_en,
     })
+
+def index(request):
+    return portal_view(request)
 
 @csrf_exempt
 def save_announcement(request):
@@ -298,7 +321,8 @@ def save_change_request(request):
                 'status': 'success', 
                 'message': 'บันทึกข้อมูล Change Request เรียบร้อยแล้ว',
                 'id': change_request.id,
-                'request_no': change_request.request_no
+                'request_no': change_request.request_no,
+                'project_name': change_request.project_name
             })
             
         except Exception as e:
@@ -416,12 +440,15 @@ def export_change_request_csv(request):
     from django.utils.dateparse import parse_date
     import datetime
     import csv
+    import os
     from django.http import HttpResponse
     
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
     
-    requests_query = ChangeRequest.objects.all().order_by('-id')
+    requests_query = ChangeRequest.objects.select_related(
+        'change_type', 'change_category', 'system_affected', 'branch_location', 'risk_level'
+    ).prefetch_related('attachments').order_by('-id')
     
     if start_date_str and end_date_str:
         try:
@@ -437,21 +464,156 @@ def export_change_request_csv(request):
             pass
 
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    response['Content-Disposition'] = f'attachment; filename="change_request_report_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    filename = f"change_request_all_columns_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     writer = csv.writer(response)
-    # Header
-    writer.writerow(['No.', 'Request No.', 'Project Name', 'Project Owner', 'Start Date', 'End Date', 'Create Date'])
-    
+
+    # 46 Comprehensive descriptive columns for database export
+    headers = [
+        'ลำดับ (No.)',
+        'เลขที่เอกสาร (Request No.)',
+        'ชื่อเอกสาร / โครงการ (Project Name)',
+        'ประเภทการเปลี่ยนแปลง (Change Type)',
+        'หมวดหมู่การเปลี่ยนแปลง (Change Category)',
+        'ระบบที่ได้รับผลกระทบ (System Affected)',
+        'สาขา / สถานที่ (Branch Location)',
+        'ระดับความเสี่ยง (Risk Level)',
+        'เจ้าของโครงการ (Project Owner)',
+        'วัตถุประสงค์ (Objectives)',
+        'บริษัทคู่ค้า / ผู้รับเหมา (Contractor Company)',
+        'ผู้รับผิดชอบหลัก (Main Responsible Person)',
+        'วันที่เริ่มต้นดำเนินการ (Start Date)',
+        'วันที่สิ้นสุดดำเนินการ (End Date)',
+        'วัตถุประสงค์การใช้งาน (Usage Purpose)',
+        'ลักษณะการใช้งาน (Usage Type)',
+        'ประเภท Application (App Type)',
+        'ประเภท Infrastructure (Infra Type)',
+        'การพัฒนา/ทดสอบโปรแกรม (Software Dev/Test)',
+        'การเปลี่ยนแปลงฐานข้อมูล (Database Change)',
+        'เอกสารประกอบที่ส่งมอบ (Documents Provided)',
+        'เอกสารประกอบอื่นๆ (Other Documents)',
+        'จำนวนเครื่องเสมือน (VM Count)',
+        'ต้องการ Public IP (Require Public IP)',
+        'ชื่อ Domain Name',
+        'CPU (vCore)',
+        'RAM (GB)',
+        'Storage (GB)',
+        'ระบบปฏิบัติการ (OS)',
+        'เวอร์ชัน OS (OS Version)',
+        'Ports ที่เปิดใช้งาน (Ports)',
+        'ระบบยืนยันตัวตน (Authentication)',
+        'ประเภทการเข้าถึง (Access Type)',
+        'ต้องการ HTTPS (Require HTTPS)',
+        'Traffic ที่คาดการณ์ (Expected Traffic)',
+        'ระบบที่เกี่ยวข้อง (Dependencies)',
+        'ต้องการ DR/HA (Require DR/HA)',
+        'หมายเหตุเพิ่มเติม (Additional Notes)',
+        'ผู้ร้องขอ (Requester Name)',
+        'วันที่ร้องขอ (Requester Date)',
+        'ผู้ประเมินด้านเทคนิค (Evaluator Name)',
+        'วันที่ประเมิน (Evaluator Date)',
+        'ผู้อนุมัติ (Approver Name)',
+        'วันที่อนุมัติ (Approver Date)',
+        'ไฟล์แนบในระบบ (Attached Files)',
+        'วันที่และเวลาสร้างรายการ (Created At)'
+    ]
+    writer.writerow(headers)
+
+    def clean_text(val):
+        if val is None:
+            return "-"
+        s = str(val).strip()
+        if not s or s in ['-', '--', '---', 'N/A', 'n/a', 'none', 'None']:
+            return "-"
+        s = s.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ')
+        # Prevent Excel Formula Injection / #NAME? errors
+        if s.startswith(('=', '+', '@')):
+            s = "'" + s
+        elif s.startswith('-') and len(s) > 1 and not s[1:].replace('.', '', 1).isdigit():
+            if set(s) == {'-'}:
+                return "-"
+            s = "'" + s
+        return s
+
+    def format_hardware(val, unit):
+        if val is None:
+            return "-"
+        s = str(val).strip()
+        if not s or s in ['-', '--', '---', 'N/A', 'n/a', 'none', 'None']:
+            return "-"
+        if unit.lower() in s.lower():
+            return clean_text(s)
+        return clean_text(f"{s} {unit}")
+
+    def bool_text(val, true_label="ต้องการ", false_label="ไม่ต้องการ"):
+        return true_label if val else false_label
+
+    def format_date(d):
+        return d.strftime("%Y-%m-%d") if d else "-"
+
     for i, req in enumerate(requests_query, 1):
+        # Format attachments list
+        attachment_names = [
+            os.path.basename(att.file.name)
+            for att in req.attachments.all()
+            if att.file and att.file.name
+        ]
+        attachments_str = ", ".join(attachment_names) if attachment_names else "ไม่มีไฟล์แนบ"
+
+        # Hardware unit formats
+        vm_str = f"{req.vm_count} เครื่อง" if req.vm_count is not None and str(req.vm_count).strip() not in ['', '-'] else "-"
+        cpu_str = format_hardware(req.cpu_vcore, "vCore")
+        ram_str = format_hardware(req.ram_gb, "GB")
+        storage_str = format_hardware(req.storage_gb, "GB")
+
         writer.writerow([
             i,
-            req.request_no,
-            req.project_name,
-            req.project_owner,
-            req.start_date.strftime("%Y-%m-%d") if req.start_date else "",
-            req.end_date.strftime("%Y-%m-%d") if req.end_date else "",
-            req.created_at.strftime("%Y-%m-%d %H:%M") if req.created_at else ""
+            req.request_no or "-",
+            clean_text(req.project_name),
+            req.change_type.name if req.change_type else "-",
+            req.change_category.name if req.change_category else "-",
+            req.system_affected.name if req.system_affected else "-",
+            req.branch_location.name if req.branch_location else "-",
+            req.risk_level.name if req.risk_level else "-",
+            clean_text(req.project_owner),
+            clean_text(req.objectives),
+            clean_text(req.contractor_company),
+            clean_text(req.main_responsible_person),
+            format_date(req.start_date),
+            format_date(req.end_date),
+            clean_text(req.usage_purpose),
+            clean_text(req.usage_type),
+            clean_text(req.app_type),
+            clean_text(req.infra_type),
+            clean_text(req.software_dev_test),
+            clean_text(req.database_change),
+            clean_text(req.documents_provided),
+            clean_text(req.other_documents),
+            vm_str,
+            bool_text(req.require_public_ip, "ต้องการ Public IP", "ไม่ต้องการ Public IP"),
+            clean_text(req.domain_name),
+            cpu_str,
+            ram_str,
+            storage_str,
+            clean_text(req.os),
+            clean_text(req.os_version),
+            clean_text(req.ports),
+            bool_text(req.has_authentication, "มีระบบยืนยันตัวตน", "ไม่มีระบบยืนยันตัวตน"),
+            clean_text(req.access_type),
+            bool_text(req.require_https, "ต้องการ HTTPS", "ไม่ต้องการ HTTPS"),
+            clean_text(req.expected_traffic),
+            clean_text(req.dependencies),
+            bool_text(req.require_dr_ha, "ต้องการ DR/HA", "ไม่ต้องการ DR/HA"),
+            clean_text(req.additional_notes),
+            clean_text(req.requester_name),
+            format_date(req.requester_date),
+            clean_text(req.evaluator_name),
+            format_date(req.evaluator_date),
+            clean_text(req.approver_name),
+            format_date(req.approver_date),
+            attachments_str,
+            req.created_at.strftime("%Y-%m-%d %H:%M:%S") if req.created_at else "-"
         ])
         
     return response

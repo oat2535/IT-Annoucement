@@ -43,36 +43,101 @@
             color: var(--text-dark);
         }
 
-        /* Modern Navbar / Toolbar */
+        /* Modern Navbar / Toolbar Container with Scroll Controls */
+        .toolbar-container {
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .toolbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin-bottom: 25px;
-            background: rgba(255, 255, 255, 0.96);
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            padding: 10px 18px;
+            padding: 10px 16px 12px 16px;
             border-radius: 12px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 4px 15px -3px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
-            width: 100%;
-            max-width: 1000px;
-            position: sticky;
-            top: 20px;
-            z-index: 1000;
+            flex: 1;
+            min-width: 0;
             overflow-x: auto;
             white-space: nowrap;
             -webkit-overflow-scrolling: touch;
             box-sizing: border-box;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #0284c7 #e2e8f0;
         }
+
+        /* High-visibility, easy-to-click & drag horizontal scrollbar */
         .toolbar::-webkit-scrollbar {
-            height: 4px;
+            height: 10px;
+            cursor: pointer;
+        }
+        .toolbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+            margin: 0 8px;
+            border: 1px solid #e2e8f0;
         }
         .toolbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+            background: #94a3b8;
+            border-radius: 8px;
+            border: 2px solid #f1f5f9;
+            cursor: grab;
+        }
+        .toolbar::-webkit-scrollbar-thumb:hover {
+            background: #0284c7;
+        }
+        .toolbar::-webkit-scrollbar-thumb:active {
+            background: #0369a1;
+            cursor: grabbing;
+        }
+
+        /* Navigation Scroll Buttons (Left / Right) */
+        .toolbar-scroll-btn {
+            width: 36px;
+            height: 44px;
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            color: #334155;
+            display: none; /* Shown dynamically by JS when toolbar overflows */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-size: 14px;
+            user-select: none;
+        }
+        .toolbar-scroll-btn:hover:not(:disabled) {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+            transform: scale(1.06);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        .toolbar-scroll-btn:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+        .toolbar-scroll-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            box-shadow: none;
         }
 
         .toolbar-section {
@@ -501,7 +566,7 @@
                 padding: 0 !important;
                 margin: 0 !important;
             }
-            .toolbar {
+            .toolbar-container, .toolbar, .toolbar-scroll-btn {
                 display: none !important;
             }
             .form-container {
@@ -602,52 +667,66 @@
 </head>
 <body>
 
-    <div class="toolbar" id="toolbar">
-        <div class="toolbar-section toolbar-left">
-            <a href="{% url 'index' %}" class="nav-btn nav-btn-back" title="กลับไปยังหน้าหลักประกาศ">
-                <i class="fa-solid fa-arrow-left"></i>
-                <span>กลับหน้าหลัก</span>
-            </a>
-            <div class="toolbar-divider"></div>
-            <div class="select-wrapper">
-                <i class="fa-solid fa-folder-open select-icon"></i>
-                <select id="select-request-no" class="custom-nav-select" onchange="loadRequest()" title="เลือกรายการเอกสารเพื่อดูข้อมูล หรือสร้างใหม่">
-                    <option value="" {% if not req_obj %}selected{% endif %}>✨ สร้างใหม่ ({{ next_request_no }})</option>
-                    {% for req in all_requests %}
-                        <option value="{{ req.request_no }}" {% if req_obj and req_obj.request_no == req.request_no %}selected{% endif %}>
-                            {{ req.request_no }} - {{ req.project_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <i class="fa-solid fa-chevron-down select-chevron"></i>
+    <div class="toolbar-container" id="toolbar-container">
+        <button type="button" class="toolbar-scroll-btn toolbar-scroll-btn-left" id="toolbarScrollLeft" onclick="scrollToolbar(-250)" title="เลื่อนแถบเมนูไปทางซ้าย" aria-label="เลื่อนซ้าย">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div class="toolbar" id="toolbar">
+            <div class="toolbar-section toolbar-left">
+                <a href="{% url 'portal' %}" class="nav-btn nav-btn-back" title="กลับไปยังหน้าหลัก IT Portal">
+                    <i class="fa-solid fa-house"></i>
+                    <span>หน้าหลัก Portal</span>
+                </a>
+                <a href="{% url 'announcement' %}" class="nav-btn" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: white;" title="สลับไปยังระบบ IT Announcement">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <span>IT Announcement</span>
+                </a>
+                <div class="toolbar-divider"></div>
+                <div class="select-wrapper">
+                    <i class="fa-solid fa-folder-open select-icon"></i>
+                    <select id="select-request-no" class="custom-nav-select" onchange="loadRequest()" title="เลือกรายการเอกสารเพื่อดูข้อมูล หรือสร้างใหม่">
+                        <option value="" {% if not req_obj %}selected{% endif %}>✨ สร้างใหม่ ({{ next_request_no }})</option>
+                        {% for req in all_requests %}
+                            <option value="{{ req.request_no }}" {% if req_obj and req_obj.request_no == req.request_no %}selected{% endif %}>
+                                {{ req.request_no }} - {{ req.project_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </div>
+            </div>
+
+            <div class="toolbar-section toolbar-center">
+                <button class="nav-btn nav-btn-save" id="save-btn" onclick="saveToDB()" title="บันทึกข้อมูลลงฐานข้อมูล">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Save to DB</span>
+                </button>
+                <button class="nav-btn nav-btn-image" onclick="exportToImage()" title="บันทึกเอกสารเป็นรูปภาพ PNG">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Save Image</span>
+                </button>
+                <button class="nav-btn nav-btn-pdf" onclick="exportToPDF()" title="ส่งออกหรือพิมพ์เอกสารเป็น PDF">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Save PDF</span>
+                </button>
+                <button class="nav-btn nav-btn-info" onclick="showReferenceInfo()" title="ดูข้อมูลและคู่มืออ้างอิง">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Reference</span>
+                </button>
+            </div>
+
+            <div class="toolbar-section toolbar-right">
+                <a href="{% url 'change_request_report' %}" class="nav-btn nav-btn-report" title="ดูหน้ารายงาน Change Request">
+                    <i class="fa-solid fa-table-list"></i>
+                    <span>View Report</span>
+                </a>
             </div>
         </div>
 
-        <div class="toolbar-section toolbar-center">
-            <button class="nav-btn nav-btn-save" id="save-btn" onclick="saveToDB()" title="บันทึกข้อมูลลงฐานข้อมูล">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <span>Save to DB</span>
-            </button>
-            <button class="nav-btn nav-btn-image" onclick="exportToImage()" title="บันทึกเอกสารเป็นรูปภาพ PNG">
-                <i class="fa-solid fa-image"></i>
-                <span>Save Image</span>
-            </button>
-            <button class="nav-btn nav-btn-pdf" onclick="exportToPDF()" title="ส่งออกหรือพิมพ์เอกสารเป็น PDF">
-                <i class="fa-solid fa-file-pdf"></i>
-                <span>Save PDF</span>
-            </button>
-            <button class="nav-btn nav-btn-info" onclick="showReferenceInfo()" title="ดูข้อมูลและคู่มืออ้างอิง">
-                <i class="fa-solid fa-circle-info"></i>
-                <span>Reference</span>
-            </button>
-        </div>
-
-        <div class="toolbar-section toolbar-right">
-            <a href="{% url 'change_request_report' %}" class="nav-btn nav-btn-report" title="ดูหน้ารายงาน Change Request">
-                <i class="fa-solid fa-table-list"></i>
-                <span>View Report</span>
-            </a>
-        </div>
+        <button type="button" class="toolbar-scroll-btn toolbar-scroll-btn-right" id="toolbarScrollRight" onclick="scrollToolbar(250)" title="เลื่อนแถบเมนูไปทางขวา" aria-label="เลื่อนขวา">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
     </div>
 
     <div class="form-container" id="export-area">
@@ -1049,10 +1128,95 @@
         let currentRequestNo = '{{ current_request_no }}';
         let selectedFiles = [];
 
+        function scrollToolbar(offset) {
+            const toolbar = document.getElementById('toolbar');
+            if (toolbar) {
+                toolbar.scrollBy({ left: offset, behavior: 'smooth' });
+                setTimeout(updateToolbarScrollButtons, 300);
+            }
+        }
+
+        function updateToolbarScrollButtons() {
+            const toolbar = document.getElementById('toolbar');
+            const leftBtn = document.getElementById('toolbarScrollLeft');
+            const rightBtn = document.getElementById('toolbarScrollRight');
+            if (!toolbar || !leftBtn || !rightBtn) return;
+
+            const isScrollable = toolbar.scrollWidth > toolbar.clientWidth + 5;
+            if (!isScrollable) {
+                leftBtn.style.display = 'none';
+                rightBtn.style.display = 'none';
+                return;
+            }
+
+            leftBtn.style.display = 'flex';
+            rightBtn.style.display = 'flex';
+
+            const atLeft = toolbar.scrollLeft <= 5;
+            const atRight = toolbar.scrollLeft + toolbar.clientWidth >= toolbar.scrollWidth - 5;
+
+            leftBtn.disabled = atLeft;
+            rightBtn.disabled = atRight;
+        }
+
+        // Initialize Toolbar scroll handlers on DOM ready
+        $(document).ready(function() {
+            const toolbar = document.getElementById('toolbar');
+            if (toolbar) {
+                toolbar.addEventListener('scroll', updateToolbarScrollButtons, { passive: true });
+                window.addEventListener('resize', updateToolbarScrollButtons);
+                updateToolbarScrollButtons();
+
+                // Mouse wheel horizontal scrolling
+                toolbar.addEventListener('wheel', function(e) {
+                    if (toolbar.scrollWidth > toolbar.clientWidth && e.deltaY !== 0) {
+                        e.preventDefault();
+                        toolbar.scrollLeft += e.deltaY;
+                        updateToolbarScrollButtons();
+                    }
+                }, { passive: false });
+
+                // Mouse drag scrolling
+                let isDragging = false;
+                let startX = 0;
+                let startScroll = 0;
+
+                toolbar.addEventListener('mousedown', function(e) {
+                    if (e.target.closest('button, a, select, input')) return;
+                    isDragging = true;
+                    startX = e.pageX;
+                    startScroll = toolbar.scrollLeft;
+                    toolbar.style.cursor = 'grabbing';
+                });
+
+                window.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    const walk = (e.pageX - startX) * 1.2;
+                    toolbar.scrollLeft = startScroll - walk;
+                    updateToolbarScrollButtons();
+                });
+
+                window.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        toolbar.style.cursor = '';
+                    }
+                });
+            }
+        });
+
         function loadRequest() {
             const select = document.getElementById('select-request-no');
             const requestNo = select ? select.value : '';
             if (requestNo) {
+                Swal.fire({
+                    title: 'กำลังดึงข้อมูลเอกสาร...',
+                    html: `<div style="font-size:15px; color:#475569; margin-top:5px;">กำลังโหลดข้อมูลเอกสารเลขที่ <strong style="color:#0284c7;">${requestNo}</strong></div>`,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 window.location.href = "{% url 'change_request' %}?request_no=" + encodeURIComponent(requestNo);
             } else {
                 window.location.href = "{% url 'change_request' %}";
@@ -1468,15 +1632,43 @@
                     // Hide save button
                     document.getElementById('save-btn').style.display = 'none';
 
+                    const createdNo = data.request_no;
+                    const projectName = data.project_name || formData.get('project_name') || '-';
+
                     Swal.fire({
                         icon: 'success',
-                        title: 'บันทึกสำเร็จ',
-                        text: `บันทึกข้อมูลเรียบร้อยแล้ว: ${data.request_no}\nระบบกำลังนำคุณไปยังหน้าเอกสารที่รอสร้างใหม่`,
-                        timer: 2000,
-                        showConfirmButton: true,
-                        confirmButtonText: 'ตกลง'
-                    }).then(() => {
-                        window.location.href = "{% url 'change_request' %}";
+                        title: 'สร้างและบันทึกเอกสารสำเร็จ!',
+                        html: `
+                            <div style="text-align: left; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 16px; margin-top: 10px; font-size: 15px; color: #166534;">
+                                <div style="margin-bottom: 8px;">
+                                    <strong style="color: #14532d;">เลขที่เอกสารใหม่:</strong>
+                                    <span style="font-weight: 700; color: #15803d; font-size: 16px; margin-left: 4px;">${createdNo}</span>
+                                </div>
+                                <div>
+                                    <strong style="color: #14532d;">ชื่อเอกสาร / โครงการ:</strong>
+                                    <span style="font-weight: 600; color: #1e293b; margin-left: 4px;">${projectName}</span>
+                                </div>
+                            </div>
+                            <p style="margin-top: 14px; margin-bottom: 0; font-size: 14px; color: #475569;">
+                                ข้อมูลถูกบันทึกลงสู่ระบบเรียบร้อยแล้ว ท่านต้องการดำเนินการอย่างไรต่อไป?
+                            </p>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fa-solid fa-plus-circle"></i> ไปหน้าสร้างเอกสารใหม่',
+                        confirmButtonColor: '#10b981',
+                        cancelButtonText: '<i class="fa-solid fa-file-lines"></i> ดูเอกสารที่เพิ่งสร้างนี้',
+                        cancelButtonColor: '#0284c7',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            sessionStorage.setItem('cr_new_created_msg', JSON.stringify({
+                                request_no: createdNo,
+                                project_name: projectName
+                            }));
+                            window.location.href = "{% url 'change_request' %}";
+                        } else {
+                            window.location.href = "{% url 'change_request' %}?request_no=" + encodeURIComponent(createdNo);
+                        }
                     });
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
@@ -1492,7 +1684,10 @@
         // Before export, prepare inputs for rendering
         function prepareForExport() {
             // Hide non-printable elements
-            document.getElementById('toolbar').style.display = 'none';
+            const tbCont = document.getElementById('toolbar-container');
+            if (tbCont) tbCont.style.display = 'none';
+            const tb = document.getElementById('toolbar');
+            if (tb) tb.style.display = 'none';
             document.getElementById('attachments').style.display = 'none';
             
             // Hide preview and download buttons
@@ -1578,7 +1773,10 @@
         }
         
         function restoreAfterExport() {
-            document.getElementById('toolbar').style.display = 'flex';
+            const tbCont = document.getElementById('toolbar-container');
+            if (tbCont) tbCont.style.display = 'flex';
+            const tb = document.getElementById('toolbar');
+            if (tb) tb.style.display = 'flex';
             document.getElementById('attachments').style.display = 'block';
 
             // Restore preview and download buttons
@@ -1886,6 +2084,66 @@
                         item.appendChild(rightDiv);
                         previewContainer.appendChild(item);
                     });
+                }
+
+                // แสดง Popup แจ้งเตือนเมื่อโหลดข้อมูลเอกสารเก่าที่สร้างไว้แล้วเรียบร้อย
+                const docNo = "{{ req_obj.request_no|default:''|escapejs }}";
+                const docTitle = (reqData && reqData.project_name) ? reqData.project_name : "{{ req_obj.project_name|default:'-'|escapejs }}";
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'โหลดข้อมูลเอกสารเรียบร้อยแล้ว',
+                    html: `
+                        <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-top: 10px; font-size: 15px; color: #1e293b;">
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #475569;">เลขที่เอกสาร:</strong>
+                                <span style="font-weight: 700; color: #0284c7; font-size: 16px; margin-left: 4px;">${docNo}</span>
+                            </div>
+                            <div>
+                                <strong style="color: #475569;">ชื่อเอกสาร / โครงการ:</strong>
+                                <span style="font-weight: 600; color: #334155; margin-left: 4px;">${docTitle || '-'}</span>
+                            </div>
+                        </div>
+                        <p style="margin-top: 12px; margin-bottom: 0; font-size: 13px; color: #64748b;">
+                            <i class="fa-solid fa-lock" style="margin-right: 4px;"></i> ขณะนี้อยู่ในโหมดดูเอกสาร (ข้อมูลถูกล็อกไม่ให้แก้ไข)
+                        </p>
+                    `,
+                    confirmButtonText: '<i class="fa-solid fa-check"></i> ตกลง',
+                    confirmButtonColor: '#0284c7',
+                    timer: 3500,
+                    timerProgressBar: true
+                });
+            } else {
+                // ตรวจสอบข้อความแจ้งเตือนเมื่อสร้างเอกสารเสร็จแล้วเข้ามาที่หน้าสร้างใหม่
+                const createdMsg = sessionStorage.getItem('cr_new_created_msg');
+                if (createdMsg) {
+                    sessionStorage.removeItem('cr_new_created_msg');
+                    try {
+                        const parsed = JSON.parse(createdMsg);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'บันทึกสำเร็จ พร้อมสร้างเอกสารใหม่',
+                            html: `
+                                <div style="text-align: left; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 16px; margin-top: 10px; font-size: 15px; color: #166534;">
+                                    <div style="margin-bottom: 6px;">
+                                        <strong>บันทึกเอกสารก่อนหน้าแล้ว:</strong> 
+                                        <span style="font-weight: 700; color: #15803d; margin-left: 4px;">${parsed.request_no}</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #334155;">
+                                        <strong>ชื่อเอกสาร / โครงการ:</strong> 
+                                        <span style="margin-left: 4px;">${parsed.project_name || '-'}</span>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 12px; margin-bottom: 0; font-size: 14px; color: #475569;">
+                                    ระบบได้เตรียมแบบฟอร์มเปล่าสำหรับเอกสารใหม่ <strong style="color: #0284c7;">${currentRequestNo}</strong> เรียบร้อยแล้วครับ
+                                </p>
+                            `,
+                            confirmButtonText: '<i class="fa-solid fa-pen-to-square"></i> เริ่มกรอกเอกสารใหม่',
+                            confirmButtonColor: '#10b981',
+                            timer: 4500,
+                            timerProgressBar: true
+                        });
+                    } catch (e) {}
                 }
             }
         });

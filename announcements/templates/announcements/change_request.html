@@ -112,7 +112,7 @@
             border: 1.5px solid #cbd5e1;
             border-radius: 10px;
             color: #334155;
-            display: none; /* Shown dynamically by JS when toolbar overflows */
+            display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
@@ -1142,10 +1142,10 @@
             const rightBtn = document.getElementById('toolbarScrollRight');
             if (!toolbar || !leftBtn || !rightBtn) return;
 
-            const isScrollable = toolbar.scrollWidth > toolbar.clientWidth + 5;
+            const isScrollable = toolbar.scrollWidth > toolbar.clientWidth + 2;
             if (!isScrollable) {
-                leftBtn.style.display = 'none';
-                rightBtn.style.display = 'none';
+                leftBtn.disabled = true;
+                rightBtn.disabled = true;
                 return;
             }
 
@@ -1165,7 +1165,13 @@
             if (toolbar) {
                 toolbar.addEventListener('scroll', updateToolbarScrollButtons, { passive: true });
                 window.addEventListener('resize', updateToolbarScrollButtons);
+                window.addEventListener('load', updateToolbarScrollButtons);
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(updateToolbarScrollButtons);
+                }
                 updateToolbarScrollButtons();
+                setTimeout(updateToolbarScrollButtons, 100);
+                setTimeout(updateToolbarScrollButtons, 500);
 
                 // Mouse wheel horizontal scrolling
                 toolbar.addEventListener('wheel', function(e) {

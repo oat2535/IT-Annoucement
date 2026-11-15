@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <!-- html2canvas and jsPDF for export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -46,45 +48,333 @@
             min-height: 100vh;
         }
 
-        /* Toolbar for Export Buttons */
-        .toolbar {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            background: white;
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        /* Modern Navbar / Toolbar Container with Scroll Controls */
+        .toolbar-container {
             position: sticky;
             top: 20px;
             z-index: 1000;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 10px 16px 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px -3px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+            flex: 1;
+            min-width: 0;
             overflow-x: auto;
             white-space: nowrap;
             -webkit-overflow-scrolling: touch;
-        }
-        .toolbar::-webkit-scrollbar {
-            display: none;
-        }
-        .toolbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #0284c7 #e2e8f0;
         }
 
-        .btn {
-            padding: 8px 16px;
-            border: none;
+        /* High-visibility, easy-to-click & drag horizontal scrollbar */
+        .toolbar::-webkit-scrollbar {
+            height: 10px;
+            cursor: pointer;
+        }
+        .toolbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
             border-radius: 8px;
-            font-family: 'Kanit', sans-serif;
+            margin: 0 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .toolbar::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 8px;
+            border: 2px solid #f1f5f9;
+            cursor: grab;
+        }
+        .toolbar::-webkit-scrollbar-thumb:hover {
+            background: #0284c7;
+        }
+        .toolbar::-webkit-scrollbar-thumb:active {
+            background: #0369a1;
+            cursor: grabbing;
+        }
+
+        /* Navigation Scroll Buttons (Left / Right) */
+        .toolbar-scroll-btn {
+            width: 36px;
+            height: 44px;
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
             font-size: 14px;
+            user-select: none;
+        }
+        .toolbar-scroll-btn:hover:not(:disabled) {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+            transform: scale(1.06);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        .toolbar-scroll-btn:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+        .toolbar-scroll-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            box-shadow: none;
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .toolbar-left {
+            gap: 10px;
+        }
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background-color: #e2e8f0;
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+        .select-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .select-wrapper .select-icon {
+            position: absolute;
+            left: 12px;
+            color: #64748b;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .select-wrapper .select-chevron {
+            position: absolute;
+            right: 12px;
+            color: #94a3b8;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .custom-nav-select {
+            height: 40px;
+            padding: 0 34px 0 34px;
+            background-color: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            color: #1e293b;
+            font-family: 'Kanit', sans-serif;
+            font-size: 13.5px;
             font-weight: 500;
             cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            max-width: 280px;
+            min-width: 220px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
             transition: all 0.2s ease;
+            outline: none;
+        }
+        .custom-nav-select:hover {
+            background-color: #ffffff;
+            border-color: #94a3b8;
+        }
+        .custom-nav-select:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .toolbar-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 12px;
+            height: 40px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .toolbar-hint i {
+            color: #0284c7;
+            font-size: 13px;
+        }
+
+        /* Nav Action Buttons */
+        .nav-btn {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            text-align: left;
-            line-height: 1.2;
-            min-height: 44px;
+            line-height: 1;
+            text-decoration: none;
+            flex-shrink: 0;
+            border: none;
+            box-sizing: border-box;
+            user-select: none;
+            min-height: 40px;
+        }
+        .nav-btn i {
+            font-size: 14px;
+        }
+        .nav-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* Nav Button Variants */
+        .nav-btn-back {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            color: #334155;
+            padding: 0 14px;
+        }
+        .nav-btn-back:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-btn-request {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+        }
+        .nav-btn-request:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-switch {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(14, 165, 233, 0.25);
+        }
+        .nav-btn-switch:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(14, 165, 233, 0.35);
+            filter: brightness(1.03);
+        }
+        .nav-btn-switch.active-green {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+        }
+        .nav-btn-switch.active-green:hover {
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+        }
+
+        .nav-btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+        }
+        .nav-btn-save:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-image {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+        }
+        .nav-btn-image:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-pdf {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+        }
+        .nav-btn-pdf:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35);
+            filter: brightness(1.03);
+        }
+
+        .nav-btn-report {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+        }
+        .nav-btn-report:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
+            filter: brightness(1.05);
+        }
+
+        @media (max-width: 900px) {
+            .toolbar {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .custom-nav-select {
+                max-width: 190px;
+                min-width: 150px;
+                font-size: 13px;
+                padding: 0 28px 0 30px;
+            }
+            .nav-btn {
+                padding: 0 12px;
+                font-size: 13px;
+            }
+        }
+
+        /* Legacy Button Helpers for Stability */
+        .btn {
+            border: none;
+            font-family: 'Kanit', sans-serif;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
         }
         .btn i {
             font-size: 1.2em;
@@ -585,6 +875,7 @@
             width: 100%;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            transform-style: preserve-3d;
         }
         .front {
             z-index: 2;
@@ -594,12 +885,17 @@
         .back {
             transform: rotateY(180deg);
             position: absolute;
+            z-index: 1;
         }
         .flipper.flipped .front {
             position: absolute;
+            z-index: 1;
+            pointer-events: none;
         }
         .flipper.flipped .back {
             position: relative;
+            z-index: 2;
+            pointer-events: auto;
         }
 
         /* Green Theme for Open System */
@@ -716,7 +1012,7 @@
             transform: scale(1.1);
         }
         @media print {
-            .scroll-top-btn { display: none !important; }
+            .toolbar-container, .toolbar, .toolbar-scroll-btn, .scroll-top-btn { display: none !important; }
         }
     </style>
     <!-- SweetAlert2 -->
@@ -724,46 +1020,69 @@
 </head>
 <body>
 
-    <!-- Action Toolbar (Hidden during export) -->
-    <div class="toolbar" id="toolbar">
-        <a href="{% url 'portal' %}" class="btn" style="background-color: #475569; color: white; text-decoration: none;" title="กลับไปยังหน้าหลัก IT Portal">
-            <i class="fa-solid fa-house"></i>
-            <div>หน้าหลัก<br>Portal</div>
-        </a>
-        <div style="font-weight: 600; margin-right: 15px; display: flex; align-items: center; color: #475569;">
-            <i class="fa-solid fa-pen-to-square" style="margin-right: 8px; font-size: 1.2em;"></i>
-            <div style="line-height: 1.2; font-size: 14px;">คลิกที่ข้อความเพื่อ<br>แก้ไข</div>
+    <!-- Action Toolbar Container with Scroll Controls -->
+    <div class="toolbar-container" id="toolbar-container">
+        <button type="button" class="toolbar-scroll-btn toolbar-scroll-btn-left" id="toolbarScrollLeft" onclick="scrollToolbar(-250)" title="เลื่อนแถบเมนูไปทางซ้าย" aria-label="เลื่อนซ้าย">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div class="toolbar" id="toolbar">
+            <div class="toolbar-section toolbar-left">
+                <a href="{% url 'portal' %}" class="nav-btn nav-btn-back btn" title="กลับไปยังหน้าหลัก IT Portal">
+                    <i class="fa-solid fa-house"></i>
+                    <span>หน้าหลัก Portal</span>
+                </a>
+                <a href="{% url 'change_request' %}" class="nav-btn nav-btn-request btn btn-purple" style="text-decoration: none;" title="สลับไปยังระบบ Request Form">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>Request Form</span>
+                </a>
+                <div class="toolbar-divider"></div>
+                <div class="select-wrapper">
+                    <i class="fa-solid fa-bullhorn select-icon"></i>
+                    <select id="select-change-no" class="custom-nav-select" onchange="loadAnnouncement()" title="เลือกรายการประกาศ หรือสร้างใหม่">
+                        <option value="">✨ สร้างใหม่ ({{ next_change_no }})</option>
+                        {% for ann in all_announcements %}
+                            <option value="{{ ann.change_no }}">{{ ann.change_no }} - {{ ann.subject }}</option>
+                        {% endfor %}
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </div>
+                <div class="toolbar-hint" title="สามารถคลิกที่ข้อความบนหน้าประกาศเพื่อแก้ไขได้โดยตรง">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>คลิกข้อความเพื่อแก้ไข</span>
+                </div>
+            </div>
+
+            <div class="toolbar-section toolbar-center">
+                <button class="nav-btn nav-btn-switch btn" onclick="toggleSystemState()" title="สลับการแสดงผลระหว่าง ปิดปรับปรุงระบบ / เปิดให้บริการระบบ">
+                    <i class="fa-solid fa-repeat"></i>
+                    <span>สลับหน้าเปิดระบบ</span>
+                </button>
+                <button class="nav-btn nav-btn-save btn" onclick="saveToDB()" title="บันทึกข้อมูลประกาศลงฐานข้อมูล">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Save to DB</span>
+                </button>
+                <button class="nav-btn nav-btn-image btn btn-primary" onclick="exportToImage()" title="บันทึกประกาศเป็นรูปภาพ PNG">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Save Image</span>
+                </button>
+                <button class="nav-btn nav-btn-pdf btn btn-danger" onclick="exportToPDF()" title="ส่งออกประกาศเป็น PDF">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Save PDF</span>
+                </button>
+            </div>
+
+            <div class="toolbar-section toolbar-right">
+                <a href="{% url 'report' %}" class="nav-btn nav-btn-report btn btn-secondary" title="ดูหน้ารายงานประวัติประกาศ">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>View Report</span>
+                </a>
+            </div>
         </div>
-        <button class="btn" style="background-color: #0ea5e9; color: white;" onclick="toggleSystemState()">
-            <i class="fa-solid fa-power-off"></i>
-            <div>สลับหน้าเปิด<br>ระบบ</div>
+
+        <button type="button" class="toolbar-scroll-btn toolbar-scroll-btn-right" id="toolbarScrollRight" onclick="scrollToolbar(250)" title="เลื่อนแถบเมนูไปทางขวา" aria-label="เลื่อนขวา">
+            <i class="fa-solid fa-chevron-right"></i>
         </button>
-        <select id="select-change-no" class="btn" style="border: 1px solid #cbd5e1; background: #f8fafc;" onchange="loadAnnouncement()">
-            <option value="">-- สร้างใหม่ ({{ next_change_no }}) --</option>
-            {% for ann in all_announcements %}
-                <option value="{{ ann.change_no }}">{{ ann.change_no }} - {{ ann.subject }}</option>
-            {% endfor %}
-        </select>
-        <a href="{% url 'change_request' %}" class="btn btn-purple" style="text-decoration: none;">
-            <i class="fa-solid fa-file-signature"></i>
-            <div>Change<br>Request</div>
-        </a>
-        <button class="btn btn-success" onclick="saveToDB()">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-            <div>Save to<br>DB</div>
-        </button>
-        <button class="btn btn-primary" onclick="exportToImage()">
-            <i class="fa-solid fa-image"></i>
-            <div>Save as<br>Image</div>
-        </button>
-        <button class="btn btn-danger" onclick="exportToPDF()">
-            <i class="fa-solid fa-file-pdf"></i>
-            <div>Save as<br>PDF</div>
-        </button>
-        <a href="{% url 'report' %}" class="btn btn-secondary">
-            <i class="fa-solid fa-chart-line"></i>
-            <div>View<br>Report</div>
-        </a>
     </div>
 
     <div class="flip-wrapper">
@@ -1046,6 +1365,89 @@
     <script>
         let isSavedToDB = false;
 
+        function scrollToolbar(offset) {
+            const toolbar = document.getElementById('toolbar');
+            if (toolbar) {
+                toolbar.scrollBy({ left: offset, behavior: 'smooth' });
+                setTimeout(updateToolbarScrollButtons, 300);
+            }
+        }
+
+        function updateToolbarScrollButtons() {
+            const toolbar = document.getElementById('toolbar');
+            const leftBtn = document.getElementById('toolbarScrollLeft');
+            const rightBtn = document.getElementById('toolbarScrollRight');
+            if (!toolbar || !leftBtn || !rightBtn) return;
+
+            const isScrollable = toolbar.scrollWidth > toolbar.clientWidth + 2;
+            if (!isScrollable) {
+                leftBtn.disabled = true;
+                rightBtn.disabled = true;
+                return;
+            }
+
+            leftBtn.style.display = 'flex';
+            rightBtn.style.display = 'flex';
+
+            const atLeft = toolbar.scrollLeft <= 5;
+            const atRight = toolbar.scrollLeft + toolbar.clientWidth >= toolbar.scrollWidth - 5;
+
+            leftBtn.disabled = atLeft;
+            rightBtn.disabled = atRight;
+        }
+
+        // Initialize Toolbar scroll handlers on DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const toolbar = document.getElementById('toolbar');
+            if (toolbar) {
+                toolbar.addEventListener('scroll', updateToolbarScrollButtons, { passive: true });
+                window.addEventListener('resize', updateToolbarScrollButtons);
+                window.addEventListener('load', updateToolbarScrollButtons);
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(updateToolbarScrollButtons);
+                }
+                updateToolbarScrollButtons();
+                setTimeout(updateToolbarScrollButtons, 100);
+                setTimeout(updateToolbarScrollButtons, 500);
+
+                // Mouse wheel horizontal scrolling
+                toolbar.addEventListener('wheel', function(e) {
+                    if (toolbar.scrollWidth > toolbar.clientWidth && e.deltaY !== 0) {
+                        e.preventDefault();
+                        toolbar.scrollLeft += e.deltaY;
+                        updateToolbarScrollButtons();
+                    }
+                }, { passive: false });
+
+                // Mouse drag scrolling
+                let isDragging = false;
+                let startX = 0;
+                let startScroll = 0;
+
+                toolbar.addEventListener('mousedown', function(e) {
+                    if (e.target.closest('button, a, select, input')) return;
+                    isDragging = true;
+                    startX = e.pageX;
+                    startScroll = toolbar.scrollLeft;
+                    toolbar.style.cursor = 'grabbing';
+                });
+
+                window.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    const walk = (e.pageX - startX) * 1.2;
+                    toolbar.scrollLeft = startScroll - walk;
+                    updateToolbarScrollButtons();
+                });
+
+                window.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        toolbar.style.cursor = '';
+                    }
+                });
+            }
+        });
+
         async function loadAnnouncement() {
             const changeNo = document.getElementById('select-change-no').value;
             if (!changeNo) {
@@ -1104,39 +1506,66 @@
             }
         }
 
-        let isSystemOpen = false;
+        var isSystemOpen = false;
 
         function toggleSystemState() {
             const flipper = document.getElementById('flipper');
+            const switchBtn = document.querySelector('.nav-btn-switch');
+            const switchBtnText = switchBtn ? switchBtn.querySelector('span') : null;
+            const switchBtnIcon = switchBtn ? switchBtn.querySelector('i') : null;
             
             if (!isSystemOpen) {
                 // Copy data from Close to Open before flipping
                 try {
-                    const closeSubject = document.querySelector('.subheader-title').innerText.replace('แจ้งปิดปรับปรุงระบบ', 'แจ้งเปิดใช้งานระบบ');
-                    document.getElementById('open-subheader-title').innerText = closeSubject;
+                    const closeSubjectElem = document.querySelector('#capture-area-close .subheader-title');
+                    if (closeSubjectElem) {
+                        const closeSubject = closeSubjectElem.innerText.replace('แจ้งปิดปรับปรุงระบบ', 'แจ้งเปิดใช้งานระบบ');
+                        const openSubheader = document.getElementById('open-subheader-title');
+                        if (openSubheader) openSubheader.innerText = closeSubject;
+                    }
                     
-                    const changeNoBadge = document.querySelector('#capture-area-close .change-no-badge').innerText;
-                    document.getElementById('open-change-no-badge').innerText = changeNoBadge;
+                    const changeNoBadgeElem = document.querySelector('#capture-area-close .change-no-badge');
+                    if (changeNoBadgeElem) {
+                        const changeNoBadge = changeNoBadgeElem.innerText;
+                        const openChangeNoBadge = document.getElementById('open-change-no-badge');
+                        if (openChangeNoBadge) openChangeNoBadge.innerText = changeNoBadge;
+                    }
                     
                     const infoCards = document.querySelectorAll('#capture-area-close .info-card .card-value');
                     const subCards = document.querySelectorAll('#capture-area-close .info-card .card-subtext');
                     
-                    if(infoCards[0]) document.getElementById('open-operate-date').innerText = infoCards[0].innerText;
-                    if(subCards[0]) document.getElementById('open-operate-date-sub').innerText = subCards[0].innerText;
+                    const openOpDate = document.getElementById('open-operate-date');
+                    const openOpDateSub = document.getElementById('open-operate-date-sub');
+                    const openOpTime = document.getElementById('open-operate-time');
+                    const openOpTimeSub = document.getElementById('open-operate-time-sub');
+                    const openUserOp = document.getElementById('open-user-operate');
+
+                    if (infoCards[0] && openOpDate) openOpDate.innerText = infoCards[0].innerText;
+                    if (subCards[0] && openOpDateSub) openOpDateSub.innerText = subCards[0].innerText;
                     
-                    if(infoCards[1]) document.getElementById('open-operate-time').innerText = infoCards[1].innerText;
-                    if(subCards[1]) document.getElementById('open-operate-time-sub').innerText = subCards[1].innerText;
+                    if (infoCards[1] && openOpTime) openOpTime.innerText = infoCards[1].innerText;
+                    if (subCards[1] && openOpTimeSub) openOpTimeSub.innerText = subCards[1].innerText;
                     
-                    if(infoCards[2]) document.getElementById('open-user-operate').innerText = infoCards[2].innerText;
+                    if (infoCards[2] && openUserOp) openUserOp.innerText = infoCards[2].innerText;
                 } catch (e) {
                     console.log("Error syncing data:", e);
                 }
                 
-                flipper.classList.add('flipped');
+                if (flipper) flipper.classList.add('flipped');
                 isSystemOpen = true;
+                if (switchBtn) {
+                    switchBtn.classList.add('active-green');
+                    if (switchBtnText) switchBtnText.innerText = 'สลับหน้าปิดระบบ';
+                    if (switchBtnIcon) switchBtnIcon.className = 'fa-solid fa-rotate-left';
+                }
             } else {
-                flipper.classList.remove('flipped');
+                if (flipper) flipper.classList.remove('flipped');
                 isSystemOpen = false;
+                if (switchBtn) {
+                    switchBtn.classList.remove('active-green');
+                    if (switchBtnText) switchBtnText.innerText = 'สลับหน้าเปิดระบบ';
+                    if (switchBtnIcon) switchBtnIcon.className = 'fa-solid fa-repeat';
+                }
             }
         }
 
@@ -1538,19 +1967,26 @@
         });
 
         // Auto load saved request if change_no is in URL
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const change_no = urlParams.get('change_no');
             if (change_no) {
-                const select = $('#select-change-no');
-                if (select.find("option[value='" + change_no + "']").length === 0) {
-                    const newOption = new Option(change_no, change_no, true, true);
-                    select.append(newOption).trigger('change.select2');
-                } else {
-                    select.val(change_no).trigger('change.select2');
+                const select = document.getElementById('select-change-no');
+                if (select) {
+                    let exists = false;
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === change_no) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        const newOption = new Option(change_no, change_no, true, true);
+                        select.add(newOption);
+                    }
+                    select.value = change_no;
+                    setTimeout(() => { loadAnnouncement(); }, 100);
                 }
-                document.getElementById('select-change-no').value = change_no;
-                setTimeout(() => { loadAnnouncement(); }, 100);
             }
         });
     </script>

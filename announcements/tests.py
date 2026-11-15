@@ -41,6 +41,26 @@ class PortalAndAnnouncementViewTests(TestCase):
         # Ensure static logo is used, not 200kb inline base64
         self.assertContains(response, '/static/logo.png')
         self.assertNotContains(response, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAE4g')
+        # Ensure modern navbar toolbar layout is rendered
+        self.assertContains(response, 'toolbar-container')
+        self.assertContains(response, 'toolbarScrollLeft')
+        self.assertContains(response, 'toolbarScrollRight')
+        self.assertContains(response, 'select-change-no')
+        self.assertContains(response, 'custom-nav-select')
+        self.assertContains(response, 'หน้าหลัก Portal')
+        self.assertContains(response, 'Request Form')
+
+    def test_announcement_toggle_system_and_flipper_structure(self):
+        response = self.client.get('/announcement/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'toggleSystemState()')
+        self.assertContains(response, 'id="flipper"')
+        self.assertContains(response, 'id="capture-area-close"')
+        self.assertContains(response, 'id="capture-area-open"')
+        self.assertContains(response, 'nav-btn-switch')
+        self.assertContains(response, 'สลับหน้าเปิดระบบ')
+        # Ensure vanilla JS is used without unprotected $( calls that throw ReferenceError
+        self.assertNotContains(response, '$(document).ready')
 
 
 class ChangeRequestViewTests(TestCase):

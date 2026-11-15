@@ -259,3 +259,30 @@ class SecurityAndHttpsSettingsTests(TestCase):
         self.assertIn('python manage.py migrate --noinput', content)
         self.assertIn('python manage.py collectstatic --noinput', content)
         self.assertIn('exec "$@"', content)
+
+    def test_save_exported_image_api(self):
+        import os
+        from django.conf import settings
+        # Valid 1x1 transparent PNG in base64
+        base64_png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        post_data = {
+            'image_data': base64_png,
+            'filename': 'test_announcement.png',
+            'category': 'announcements'
+        }
+        response = self.client.post(
+            reverse('save_exported_image'),
+            data=json.dumps(post_data),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertIn('url', data)
+        target_file = os.path.join(settings.MEDIA_ROOT, 'announcements', 'test_announcement.png')
+        self.assertTrue(os.path.exists(target_file))
+        # Cleanup
+        try:
+            os.remove(target_file)
+        except Exception:
+            pass

@@ -1831,10 +1831,27 @@
                     backgroundColor: '#ffffff',
                     useCORS: true
                 }).then(canvas => {
+                    const imageData = canvas.toDataURL('image/png');
+                    const imgFileName = 'Change_Request_' + currentRequestNo + '.png';
                     const link = document.createElement('a');
-                    link.download = 'Change_Request_' + currentRequestNo + '.png';
-                    link.href = canvas.toDataURL('image/png');
+                    link.download = imgFileName;
+                    link.href = imageData;
                     link.click();
+                    
+                    // Also save image directly to server media directory for host inspection
+                    try {
+                        fetch('/api/save_exported_image/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                image_data: imageData,
+                                filename: imgFileName,
+                                category: 'change_requests'
+                            })
+                        });
+                    } catch (saveErr) {
+                        console.error("Error saving exported image to media:", saveErr);
+                    }
                     
                     restoreAfterExport();
                 }).catch(err => {

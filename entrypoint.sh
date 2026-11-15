@@ -13,12 +13,10 @@ if [ -f "$DB_FILE" ]; then
     chmod 666 "$DB_FILE" || true
 fi
 
-# 2. Ensure media directory exists and has permissions
+# 2. Ensure media directory and subfolders exist and have permissions
 MEDIA_DIR="/app/media"
-if [ ! -d "$MEDIA_DIR" ]; then
-    mkdir -p "$MEDIA_DIR"
-fi
-chmod 777 "$MEDIA_DIR" || true
+mkdir -p "$MEDIA_DIR" "$MEDIA_DIR/announcements" "$MEDIA_DIR/change_requests"
+chmod -R 777 "$MEDIA_DIR" || true
 
 # 3. Apply database migrations to target database
 echo "[Entrypoint] Applying database migrations..."

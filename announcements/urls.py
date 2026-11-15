@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/preview_document/', views.preview_document, name='preview_document'),
     path('change-request-report/', views.change_request_report_view, name='change_request_report'),
     path('export_change_request_csv/', views.export_change_request_csv, name='export_change_request_csv'),
+    path('api/save_exported_image/', views.save_exported_image, name='save_exported_image'),
 ]

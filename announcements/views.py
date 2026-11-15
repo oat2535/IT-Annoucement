@@ -1,5 +1,8 @@
 import os
 import json
+import base64
+import re
+from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.utils import timezone
@@ -732,5 +735,55 @@ def preview_document(request):
                 
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+def save_exported_image(request):
+    """
+    Saves an exported PNG image directly to MEDIA_ROOT (e.g. /app/media -> host /home/admintlp/it-annoucement-tlp/media)
+    so administrators can easily inspect exported announcements and change requests directly on the host server.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        image_data = data.get('image_data', '')
+        filename = data.get('filename', 'exported_image.png')
+        category = data.get('category', 'exports')
+        
+        if not image_data or ',' not in image_data:
+            return JsonResponse({'status': 'error', 'message': 'Invalid image data'}, status=400)
+            
+        # Sanitize filename and category
+        clean_category = re.sub(r'[^a-zA-Z0-9_\-]', '', category) or 'exports'
+        clean_filename = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', filename)
+        if not clean_filename.lower().endswith('.png'):
+            clean_filename += '.png'
+            
+        header, encoded = image_data.split(',', 1)
+        file_bytes = base64.b64decode(encoded)
+        
+        target_dir = os.path.join(settings.MEDIA_ROOT, clean_category)
+        os.makedirs(target_dir, exist_ok=True)
+        file_path = os.path.join(target_dir, clean_filename)
+        
+        with open(file_path, 'wb') as f:
+            f.write(file_bytes)
+            
+        # Ensure permissions so host user can read
+        try:
+            os.chmod(file_path, 0o666)
+        except Exception:
+            pass
+            
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Image saved to media successfully',
+            'url': f"{settings.MEDIA_URL}{clean_category}/{clean_filename}",
+            'filename': clean_filename
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 

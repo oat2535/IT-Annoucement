@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: it-announcement:latest
     container_name: it_announcement_web
     restart: unless-stopped
     ports:

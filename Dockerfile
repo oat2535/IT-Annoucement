@@ -2,27 +2,25 @@
 FROM python:3.12-alpine
 
 # ตั้งค่าตัวแปรสิ่งแวดล้อม (Environment Variables)
-# ป้องกันไม่ให้ Python เขียนไฟล์ .pyc (ไม่จำเป็นใน Docker)
-ENV PYTHONDONTWRITEBYTECODE=1
-# ให้ Python ส่ง Log ออกมาทันที ไม่ต้องรอ Buffer (ช่วยให้เห็น Log Real-time)
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 # กำหนดโฟลเดอร์ทำงานภายใน Container เป็น /app
 WORKDIR /app
 
-# คัดลอกไฟล์ requirements.txt เข้าไปก่อน เพื่อติดตั้ง Library
-# (ทำแยกเพื่อใช้ประโยชน์จาก Docker Cache Layer หากไม่มีการแก้ไฟล์นี้)
+# ขั้นตอนที่ 1: ติดตั้ง System Packages (วางไว้บนสุดเพื่อให้ Docker Cache ชั้นนี้ถาวร ไม่ต้องดาวน์โหลดใหม่ทุกครั้งที่แก้โค้ด)
+# ปรับตัดฟอนต์ CJK (ภาษาจีน/ญี่ปุ่น/เกาหลี) และฟอนต์ที่ไม่จำเป็นออก ช่วยประหยัดเน็ตและลดขนาดดาวน์โหลดกว่า 600MB
+RUN apk add --no-cache curl libreoffice font-noto-thai
+
+# ขั้นตอนที่ 2: ติดตั้ง Python Dependencies (แยก Layer เพื่อให้ Cache ถาวรหาก requirements.txt ไม่เปลี่ยนแปลง)
 COPY requirements.txt /app/
-RUN pip install --upgrade pip && pip install -r requirements.txt
-# ติดตั้ง LibreOffice, Font ภาษาไทยพื้นฐาน และ curl สำหรับ healthcheck
-RUN apk add --no-cache libreoffice font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-thai curl
+RUN pip install --no-cache-dir -r requirements.txt
 
-# (Optional) คัดลอก Font จาก Windows (เช่น Tahoma, TH Sarabun) เข้าไปใน Container
-# เพื่อแก้ปัญหา Layout ไฟล์ Word เพี้ยนเมื่อแปลงด้วย LibreOffice
+# ขั้นตอนที่ 3: คัดลอก Font ภาษาไทยเฉพาะของระบบ (Tahoma, TH Sarabun, Angsana, Cordia)
 COPY fonts/ /usr/share/fonts/custom/
-RUN fc-cache -f -v
+RUN fc-cache -f
 
-# คัดลอกไฟล์โปรเจคทั้งหมด เข้าสู่ Container
+# ขั้นตอนที่ 4: คัดลอกไฟล์โปรเจคทั้งหมด เข้าสู่ Container (วางไว้ท้ายสุดเพราะโค้ดมีการแก้ไขบ่อยที่สุด)
 COPY . /app/
 
 # เตรียมไดเรกทอรีสำหรับ persistent data & media และแปลง line-endings ป้องกันปัญหา CRLF

@@ -1,0 +1,33 @@
+# Git version control
+.git
+.gitignore
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Database & Runtime persistence (mounted via volume, do not bake into image)
+db.sqlite3
+media/
+data/
+staticfiles/
+
+# Environment files & Secrets
+.env
+.env.local
+.env.*.local
+
+# IDE, OS, and Editor files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Agent skills & temporary document files
+.agents/
+*.docx

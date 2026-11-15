@@ -78,13 +78,27 @@ WSGI_APPLICATION = 'it_announcement_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+sqlite_path_env = os.environ.get('SQLITE_PATH')
+if sqlite_path_env:
+    DB_FILE = Path(sqlite_path_env)
+elif (BASE_DIR / 'data' / 'db.sqlite3').exists():
+    DB_FILE = BASE_DIR / 'data' / 'db.sqlite3'
+else:
+    DB_FILE = BASE_DIR / 'db.sqlite3'
+
+# Ensure parent directory for SQLite database exists
+DB_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+# SQLite journal mode (default DELETE for single-file host mount synchronization, or WAL)
+sqlite_journal_mode = os.environ.get('SQLITE_JOURNAL_MODE', 'DELETE')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_FILE,
         'OPTIONS': {
             'timeout': 20,
-            'init_command': 'PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;',
+            'init_command': f'PRAGMA journal_mode={sqlite_journal_mode}; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=20000;',
         }
     }
 }

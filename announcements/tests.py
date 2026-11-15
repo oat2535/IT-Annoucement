@@ -111,6 +111,65 @@ class ChangeRequestViewTests(TestCase):
         self.assertEqual(created.project_name, 'New Beta Service')
         self.assertTrue(created.require_public_ip)
 
+    def test_save_change_request_with_valid_attachment(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        pdf_file = SimpleUploadedFile("sample_doc.pdf", b"%PDF-1.4 test content", content_type="application/pdf")
+        post_data = {
+            'project_name': 'Attachment Test',
+            'project_owner': 'Owner Test',
+            'objectives': 'Test attachment',
+            'main_responsible_person': 'Tester',
+            'change_type': self.change_type.id,
+            'attachments': [pdf_file]
+        }
+        response = self.client.post(reverse('save_change_request'), data=post_data)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        created = ChangeRequest.objects.filter(request_no=data['request_no']).first()
+        self.assertEqual(created.attachments.count(), 1)
+
+    def test_save_change_request_rejects_oversized_file(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        # 11 MB file (> 10 MB limit)
+        oversized = SimpleUploadedFile("huge.pdf", b"x" * (11 * 1024 * 1024), content_type="application/pdf")
+        post_data = {
+            'project_name': 'Oversized Test',
+            'project_owner': 'Owner Test',
+            'objectives': 'Test oversized',
+            'main_responsible_person': 'Tester',
+            'change_type': self.change_type.id,
+            'attachments': [oversized]
+        }
+        response = self.client.post(reverse('save_change_request'), data=post_data)
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data['status'], 'error')
+        self.assertIn('ขนาดใหญ่เกินไป', data['message'])
+
+    def test_save_change_request_rejects_disallowed_extension(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        bad_file = SimpleUploadedFile("malicious.exe", b"binary content", content_type="application/x-msdownload")
+        post_data = {
+            'project_name': 'Disallowed Test',
+            'project_owner': 'Owner Test',
+            'objectives': 'Test disallowed',
+            'main_responsible_person': 'Tester',
+            'change_type': self.change_type.id,
+            'attachments': [bad_file]
+        }
+        response = self.client.post(reverse('save_change_request'), data=post_data)
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data['status'], 'error')
+        self.assertIn('ไม่ใช่ประเภทที่ระบบรองรับ', data['message'])
+
+    def test_change_request_template_contains_10mb_limit(self):
+        response = self.client.get(reverse('change_request'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '10MB')
+        self.assertContains(response, 'accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,image/*"')
+
     def test_get_change_request_api(self):
         response = self.client.get(reverse('get_change_request') + '?request_no=CHG-2026-9999')
         self.assertEqual(response.status_code, 200)
@@ -183,3 +242,20 @@ class SecurityAndHttpsSettingsTests(TestCase):
         response = self.client.get('/', HTTP_X_FORWARDED_PROTO='https')
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.is_secure())
+
+    def test_sqlite_db_configured(self):
+        from django.conf import settings
+        db_config = settings.DATABASES['default']
+        self.assertEqual(db_config['ENGINE'], 'django.db.backends.sqlite3')
+        self.assertTrue('PRAGMA journal_mode=' in db_config['OPTIONS']['init_command'])
+
+    def test_entrypoint_file_exists_and_contains_lifecycle_steps(self):
+        import os
+        from django.conf import settings
+        entrypoint_path = settings.BASE_DIR / 'entrypoint.sh'
+        self.assertTrue(os.path.exists(entrypoint_path))
+        with open(entrypoint_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        self.assertIn('python manage.py migrate --noinput', content)
+        self.assertIn('python manage.py collectstatic --noinput', content)
+        self.assertIn('exec "$@"', content)

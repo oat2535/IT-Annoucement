@@ -2,27 +2,45 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: it-announcement:latest
+    container_name: it_announcement_web
+    restart: unless-stopped
     ports:
-      - "5889:5889" # Map port 5889 (เปลี่ยนจาก 5886 เพื่อไม่ให้ Port ชนกันหากรันบน VM เดียวกัน)
-    
-    # --- เพิ่มการตั้งค่า Volumes ตรงนี้ ---
-    volumes:
-      - /home/admintlp/it-annoucement-tlp:/app
-    # --------------------------------
+      - "${PORT:-5889}:5889"
 
-    # ใช้ environment variables ในการตั้งค่า
+    # Persistent Volumes
+    # Mount host SQLite db and media directory so host data is directly accessible and preserved across Git pulls
+    volumes:
+      - ${SQLITE_DB_PATH:-/home/admintlp/it-annoucement-tlp/db.sqlite3}:/app/db.sqlite3
+      - ${MEDIA_PATH:-/home/admintlp/it-annoucement-tlp/media}:/app/media
+
+    # Environment variables
     environment:
       - DEBUG=${DEBUG:-0}
       - SECRET_KEY=${SECRET_KEY:-django-insecure-9+jdk(%uodqv4yk!2do+a#41&k49=agn8bte4c8d=^is$&-83%}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
-      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-https://annouce.thonglorpet.com}
       - USE_HTTPS=${USE_HTTPS:-1}
+      - SQLITE_PATH=/app/db.sqlite3
+      - SQLITE_JOURNAL_MODE=${SQLITE_JOURNAL_MODE:-DELETE}
       - PYTHONUNBUFFERED=1
-    restart: unless-stopped
-    # ตั้งค่าให้ log output แสดงผลทันที (ไม่ buffer)
-    tty: true
-    stdin_open: true
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5889/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
     networks:
       - app_network
 

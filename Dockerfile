@@ -14,20 +14,27 @@ WORKDIR /app
 # (ทำแยกเพื่อใช้ประโยชน์จาก Docker Cache Layer หากไม่มีการแก้ไฟล์นี้)
 COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
-# ติดตั้ง LibreOffice และ Font ภาษาไทยพื้นฐาน
-RUN apk add --no-cache libreoffice font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-thai
+# ติดตั้ง LibreOffice, Font ภาษาไทยพื้นฐาน และ curl สำหรับ healthcheck
+RUN apk add --no-cache libreoffice font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-thai curl
 
 # (Optional) คัดลอก Font จาก Windows (เช่น Tahoma, TH Sarabun) เข้าไปใน Container
 # เพื่อแก้ปัญหา Layout ไฟล์ Word เพี้ยนเมื่อแปลงด้วย LibreOffice
-# วิธีทำ: สร้างโฟลเดอร์ fonts ในโปรเจค แล้วนำไฟล์ .ttf จาก C:\Windows\Fonts มาใส่
 COPY fonts/ /usr/share/fonts/custom/
 RUN fc-cache -f -v
 
-# คัดลอกไฟล์โปรเจคทั้งหมดใน Folder ปัจจุบัน เข้าสู่ Container
+# คัดลอกไฟล์โปรเจคทั้งหมด เข้าสู่ Container
 COPY . /app/
 
-# เปิด Port 8000 สำหรับการเชื่อมต่อ (ปรับเปลี่ยนจาก 5886 เพื่อไม่ให้ชนกับ Project เดิม)
+# เตรียมไดเรกทอรีสำหรับ persistent data & media และแปลง line-endings ป้องกันปัญหา CRLF
+RUN mkdir -p /app/data /app/media /app/staticfiles && \
+    sed -i 's/\r$//' /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# เปิด Port 5889 สำหรับการเชื่อมต่อ
 EXPOSE 5889
+
+# กำหนด Entrypoint Script สำหรับการ Migrate & Collectstatic อัตโนมัติทุกครั้งที่ Deploy
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # คำสั่งเริ่มต้นเมื่อ Container ทำงาน (รัน Server ผ่าน Gunicorn สำหรับ Production)
 # เพิ่ม --workers 3 และ --threads 2 เพื่อรองรับ Request พร้อมกันหลายๆ ตัว ป้องกันปัญหาหน้าเว็บโหลดช้า

@@ -1,3 +1,4 @@
+import os
 import json
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -314,6 +315,23 @@ def save_change_request(request):
             change_request.save()
 
             files = request.FILES.getlist('attachments')
+            allowed_exts = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif', '.webp'}
+            max_size = 10 * 1024 * 1024  # 10 MB
+
+            for f in files:
+                ext = os.path.splitext(f.name)[1].lower()
+                if ext not in allowed_exts:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'ไฟล์ {f.name} ไม่ใช่ประเภทที่ระบบรองรับ (รองรับเฉพาะ รูปภาพ, Word, Excel และ PDF เท่านั้น)'
+                    }, status=400)
+                if f.size > max_size:
+                    size_mb = f.size / (1024 * 1024)
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'ไฟล์ {f.name} มีขนาดใหญ่เกินไป ({size_mb:.2f} MB) ซึ่งเกินกว่าขนาดสูงสุดที่กำหนด 10 MB'
+                    }, status=400)
+
             for f in files:
                 ChangeRequestAttachment.objects.create(change_request=change_request, file=f)
 

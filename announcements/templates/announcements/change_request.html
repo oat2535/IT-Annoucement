@@ -925,8 +925,11 @@
             </div>
 
             <div class="form-group">
-                <label><i class="fa-solid fa-paperclip"></i> แนบไฟล์เอกสารประกอบ (รูปภาพ, PDF, เอกสาร ฯลฯ)</label>
-                <input type="file" name="attachments" id="attachments" multiple style="border:none; padding-left:0;">
+                <label><i class="fa-solid fa-paperclip"></i> แนบไฟล์เอกสารประกอบ (รูปภาพ, Word, Excel, PDF ขนาดไม่เกิน 10MB ต่อไฟล์)</label>
+                <input type="file" name="attachments" id="attachments" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,image/*" style="border:none; padding-left:0;">
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                    <i class="fa-solid fa-circle-info"></i> รองรับไฟล์: รูปภาพ (JPG, PNG, GIF, WEBP), Word (.doc, .docx), Excel (.xls, .xlsx) และ PDF ขนาดสูงสุดไม่เกิน 10 MB ต่อไฟล์
+                </div>
                 <div id="file-preview-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
             </div>
 
@@ -1496,30 +1499,23 @@
         }
 
         document.getElementById('attachments').addEventListener('change', function(e) {
-            const allowedTypes = [
-                'application/pdf', 
-                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-                'application/vnd.ms-excel', 
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            ];
             const allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'xls', 'xlsx', 'doc', 'docx'];
             const maxSize = 10 * 1024 * 1024; // 10MB
             
-            let hasError = false;
-            let errorMessage = '';
+            const oversizedFiles = [];
+            const invalidTypeFiles = [];
 
             Array.from(e.target.files).forEach(file => {
-                const ext = file.name.split('.').pop().toLowerCase();
-                let isValidType = allowedTypes.includes(file.type) || allowedExts.includes(ext);
+                const parts = file.name.split('.');
+                const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+                const isImage = file.type && file.type.startsWith('image/');
+                const isValidType = allowedExts.includes(ext) || isImage;
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
-                if (!isValidType) {
-                    hasError = true;
-                    errorMessage += `ไฟล์ ${file.name} ไม่ใช่ประเภทที่รองรับ (ต้องเป็น PDF, รูปภาพ, Excel หรือ Word เท่านั้น)<br>`;
-                } else if (file.size > maxSize) {
-                    hasError = true;
-                    errorMessage += `ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (ต้องไม่เกิน 10MB)<br>`;
+                if (file.size > maxSize) {
+                    oversizedFiles.push(`• <b>${file.name}</b> (ขนาด: ${sizeMB} MB)`);
+                } else if (!isValidType) {
+                    invalidTypeFiles.push(`• <b>${file.name}</b> (.${ext || 'ไม่ทราบนามสกุล'})`);
                 } else {
                     const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
                     if (!isDuplicate) {
@@ -1528,11 +1524,28 @@
                 }
             });
 
-            if (hasError) {
+            if (oversizedFiles.length > 0 || invalidTypeFiles.length > 0) {
+                let htmlMsg = '';
+                if (oversizedFiles.length > 0) {
+                    htmlMsg += `<div style="text-align: left; margin-bottom: 12px;">` +
+                               `<div style="font-weight: 600; color: #dc2626; margin-bottom: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> ไฟล์ที่มีขนาดเกิน 10 MB:</div>` +
+                               `<div style="font-size: 13px; color: #475569; padding-left: 8px;">${oversizedFiles.join('<br>')}</div>` +
+                               `</div>`;
+                }
+                if (invalidTypeFiles.length > 0) {
+                    htmlMsg += `<div style="text-align: left; margin-bottom: 12px;">` +
+                               `<div style="font-weight: 600; color: #d97706; margin-bottom: 4px;"><i class="fa-solid fa-file-circle-xmark"></i> ประเภทไฟล์ไม่รองรับ:</div>` +
+                               `<div style="font-size: 13px; color: #475569; padding-left: 8px;">${invalidTypeFiles.join('<br>')}</div>` +
+                               `<div style="font-size: 12px; color: #64748b; margin-top: 4px;">รองรับเฉพาะ: รูปภาพ (JPG, PNG, GIF, WEBP), Word (.doc, .docx), Excel (.xls, .xlsx) และ PDF เท่านั้น</div>` +
+                               `</div>`;
+                }
+
                 Swal.fire({
                     icon: 'warning',
-                    title: 'พบข้อผิดพลาดการแนบไฟล์',
-                    html: errorMessage
+                    title: 'ขนาดไฟล์เกินกำหนด (สูงสุด 10 MB)',
+                    html: htmlMsg,
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#3b82f6'
                 });
             }
 

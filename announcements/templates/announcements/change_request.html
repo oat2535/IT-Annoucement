@@ -1394,9 +1394,16 @@
             const previewContainer = document.getElementById('file-preview-container');
             previewContainer.innerHTML = '';
             
-            const dt = new DataTransfer();
-            selectedFiles.forEach(file => dt.items.add(file));
-            document.getElementById('attachments').files = dt.files;
+            try {
+                const dt = new DataTransfer();
+                selectedFiles.forEach(file => dt.items.add(file));
+                const fileInput = document.getElementById('attachments');
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                }
+            } catch (e) {
+                console.warn('DataTransfer sync warning:', e);
+            }
             
             selectedFiles.forEach((file, index) => {
                 const item = document.createElement('div');
@@ -1570,6 +1577,14 @@
                 }
             });
 
+            // Explicitly attach all File objects from selectedFiles array to guarantee files are reliably sent
+            formData.delete('attachments');
+            if (selectedFiles && selectedFiles.length > 0) {
+                selectedFiles.forEach(file => {
+                    formData.append('attachments', file, file.name);
+                });
+            }
+
             return formData;
         }
 
@@ -1631,6 +1646,8 @@
             }
 
             const formData = collectFormData();
+            const filesCount = formData.getAll('attachments').length;
+            console.log(`[saveToDB] Submitting form with ${filesCount} attachment(s) (selectedFiles: ${selectedFiles.length})`);
 
             fetch('/api/save_change_request/', {
                 method: 'POST',
@@ -1653,6 +1670,24 @@
 
                     const createdNo = data.request_no;
                     const projectName = data.project_name || formData.get('project_name') || '-';
+                    const attCount = data.attachments_count !== undefined ? data.attachments_count : filesCount;
+
+                    let attachmentBadge = '';
+                    if (attCount > 0) {
+                        attachmentBadge = `
+                            <div style="margin-top: 8px;">
+                                <strong style="color: #14532d;"><i class="fa-solid fa-paperclip"></i> ไฟล์แนบที่บันทึกสำเร็จ:</strong>
+                                <span style="font-weight: 600; color: #15803d; margin-left: 4px;">${attCount} ไฟล์</span>
+                            </div>
+                        `;
+                    } else if (selectedFiles.length > 0) {
+                        attachmentBadge = `
+                            <div style="margin-top: 8px; color: #b91c1c;">
+                                <strong><i class="fa-solid fa-triangle-exclamation"></i> ข้อความเตือน:</strong>
+                                <span style="margin-left: 4px;">เลือกไฟล์ไว้แต่เซิร์ฟเวอร์บันทึก 0 ไฟล์</span>
+                            </div>
+                        `;
+                    }
 
                     Swal.fire({
                         icon: 'success',
@@ -1667,6 +1702,7 @@
                                     <strong style="color: #14532d;">ชื่อเอกสาร / โครงการ:</strong>
                                     <span style="font-weight: 600; color: #1e293b; margin-left: 4px;">${projectName}</span>
                                 </div>
+                                ${attachmentBadge}
                             </div>
                             <p style="margin-top: 14px; margin-bottom: 0; font-size: 14px; color: #475569;">
                                 ข้อมูลถูกบันทึกลงสู่ระบบเรียบร้อยแล้ว ท่านต้องการดำเนินการอย่างไรต่อไป?

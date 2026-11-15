@@ -335,15 +335,32 @@ def save_change_request(request):
                         'message': f'ไฟล์ {f.name} มีขนาดใหญ่เกินไป ({size_mb:.2f} MB) ซึ่งเกินกว่าขนาดสูงสุดที่กำหนด 10 MB'
                     }, status=400)
 
+            saved_attachments = []
             for f in files:
-                ChangeRequestAttachment.objects.create(change_request=change_request, file=f)
+                att = ChangeRequestAttachment.objects.create(change_request=change_request, file=f)
+                file_path = getattr(att.file, 'path', '')
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.chmod(file_path, 0o666)
+                    except Exception:
+                        pass
+                saved_attachments.append({
+                    'id': att.id,
+                    'name': os.path.basename(att.file.name),
+                    'path': file_path,
+                    'url': att.file.url
+                })
+
+            print(f"[save_change_request] Successfully saved {change_request.request_no} with {len(saved_attachments)} attachment(s)")
 
             return JsonResponse({
                 'status': 'success', 
-                'message': 'บันทึกข้อมูล Change Request เรียบร้อยแล้ว',
+                'message': f'บันทึกข้อมูล Change Request เรียบร้อยแล้ว (แนบเอกสาร {len(saved_attachments)} ไฟล์)',
                 'id': change_request.id,
                 'request_no': change_request.request_no,
-                'project_name': change_request.project_name
+                'project_name': change_request.project_name,
+                'attachments_count': len(saved_attachments),
+                'attachments': [{'id': a['id'], 'name': a['name'], 'url': a['url']} for a in saved_attachments]
             })
             
         except Exception as e:

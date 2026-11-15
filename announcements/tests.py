@@ -126,6 +126,9 @@ class ChangeRequestViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data['status'], 'success')
+        self.assertEqual(data['attachments_count'], 1)
+        self.assertEqual(len(data['attachments']), 1)
+        self.assertIn('sample_doc', data['attachments'][0]['name'])
         created = ChangeRequest.objects.filter(request_no=data['request_no']).first()
         self.assertEqual(created.attachments.count(), 1)
 
